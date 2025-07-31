@@ -1,5 +1,6 @@
 #include "cpp-template/core/core.hpp"
 #include <iostream>
+#include <sstream>
 
 namespace cpp_template {
 namespace core {
@@ -29,6 +30,37 @@ void Core::cleanup() {
         m_initialized = false;
     }
 }
+
+bool Core::isInitialized() const {
+    return m_initialized;
+}
+
+namespace utils {
+
+std::string getFormattedProjectInfo() {
+    std::ostringstream oss;
+    oss << "Project: " << Core::getProjectName() 
+        << " (Version: " << Core::getVersion() << ")";
+    return oss.str();
+}
+
+bool validateConfiguration() {
+    // Basic configuration validation
+    if (Core::getProjectName().empty()) {
+        std::cerr << "Error: Project name is empty" << std::endl;
+        return false;
+    }
+    
+    if (Core::getVersion().empty()) {
+        std::cerr << "Error: Project version is empty" << std::endl;
+        return false;
+    }
+    
+    std::cout << "Configuration validation passed" << std::endl;
+    return true;
+}
+
+} // namespace utils
 
 } // namespace core
 } // namespace cpp_template

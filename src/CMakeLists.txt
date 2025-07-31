@@ -9,6 +9,7 @@ add_executable(cpp-template-app
 target_link_libraries(cpp-template-app
     PRIVATE
         cpp-template::core
+        cpp-template::example-module
 )
 
 # Include directories

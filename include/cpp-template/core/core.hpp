@@ -1,5 +1,13 @@
 #pragma once
 
+/**
+ * @file core.hpp
+ * @brief Public interface for the core library
+ * 
+ * This header exposes the public interface of the core library
+ * following proper namespace conventions and header guard practices.
+ */
+
 #include <string>
 
 namespace cpp_template {
@@ -7,6 +15,9 @@ namespace core {
 
 /**
  * @brief Core utility class demonstrating the template structure
+ * 
+ * This class provides basic functionality for the cpp-template project,
+ * including project information and lifecycle management.
  */
 class Core {
 public:
@@ -38,7 +49,7 @@ public:
      * @return true if initialized, false otherwise
      */
     bool isInitialized() const;
-    
+
 private:
     bool m_initialized = false;
 };
