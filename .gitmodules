@@ -1,0 +1,26 @@
+# Git submodules configuration for cpp-template
+# This file defines external dependencies managed as Git submodules
+
+# Example: Header-only JSON library (alternative to vcpkg nlohmann-json)
+[submodule "third_party/submodules/json"]
+	path = third_party/submodules/json
+	url = https://github.com/nlohmann/json.git
+	branch = develop
+
+# Example: Lightweight testing framework (alternative to gtest for minimal setups)
+[submodule "third_party/submodules/catch2"]
+	path = third_party/submodules/catch2
+	url = https://github.com/catchorg/Catch2.git
+	branch = v3.x
+
+# Example: Header-only argument parsing library
+[submodule "third_party/submodules/cxxopts"]
+	path = third_party/submodules/cxxopts
+	url = https://github.com/jarro2783/cxxopts.git
+	branch = master
+
+# Example: Fast header-only logging library
+[submodule "third_party/submodules/spdlog-header-only"]
+	path = third_party/submodules/spdlog-header-only
+	url = https://github.com/gabime/spdlog.git
+	branch = v1.x

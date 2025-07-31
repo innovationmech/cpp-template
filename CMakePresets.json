@@ -1,0 +1,95 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 20,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "default",
+      "displayName": "Default Configuration",
+      "description": "Default build configuration without vcpkg",
+      "binaryDir": "${sourceDir}/build/default",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {
+      "name": "vcpkg",
+      "displayName": "vcpkg Configuration",
+      "description": "Configure with vcpkg toolchain for dependency management",
+      "binaryDir": "${sourceDir}/build/vcpkg",
+      "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "VCPKG_VERBOSE": "OFF"
+      },
+      "environment": {
+        "VCPKG_FEATURE_FLAGS": "manifests,versions,binarycaching"
+      }
+    },
+    {
+      "name": "vcpkg-debug",
+      "displayName": "vcpkg Debug Configuration",
+      "description": "Debug build with vcpkg dependencies",
+      "inherits": "vcpkg",
+      "binaryDir": "${sourceDir}/build/vcpkg-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "VCPKG_VERBOSE": "ON"
+      }
+    },
+    {
+      "name": "vcpkg-features",
+      "displayName": "vcpkg with Features",
+      "description": "vcpkg configuration with optional features enabled",
+      "inherits": "vcpkg",
+      "binaryDir": "${sourceDir}/build/vcpkg-features",
+      "cacheVariables": {
+        "VCPKG_MANIFEST_FEATURES": "networking;database"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "default",
+      "configurePreset": "default",
+      "displayName": "Default Build"
+    },
+    {
+      "name": "vcpkg",
+      "configurePreset": "vcpkg",
+      "displayName": "vcpkg Build"
+    },
+    {
+      "name": "vcpkg-debug",
+      "configurePreset": "vcpkg-debug",
+      "displayName": "vcpkg Debug Build"
+    },
+    {
+      "name": "vcpkg-features",
+      "configurePreset": "vcpkg-features",
+      "displayName": "vcpkg Build with Features"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "default",
+      "configurePreset": "default",
+      "displayName": "Default Tests"
+    },
+    {
+      "name": "vcpkg",
+      "configurePreset": "vcpkg",
+      "displayName": "vcpkg Tests"
+    },
+    {
+      "name": "vcpkg-debug",
+      "configurePreset": "vcpkg-debug",
+      "displayName": "vcpkg Debug Tests"
+    }
+  ]
+}

@@ -2,10 +2,44 @@
   "name": "cpp-template",
   "version": "1.0.0",
   "description": "Modern C++ Project Template",
+  "homepage": "https://github.com/example/cpp-template",
+  "license": "MIT",
   "dependencies": [
     {
       "name": "gtest",
       "features": ["gmock"]
+    },
+    "fmt",
+    "spdlog",
+    {
+      "name": "nlohmann-json",
+      "version>=": "3.11.0"
+    },
+    {
+      "name": "cpprestsdk",
+      "platform": "!uwp"
+    }
+  ],
+  "features": {
+    "networking": {
+      "description": "Enable networking capabilities",
+      "dependencies": [
+        "curl",
+        "openssl"
+      ]
+    },
+    "database": {
+      "description": "Enable database support",
+      "dependencies": [
+        "sqlite3",
+        "postgresql"
+      ]
+    }
+  },
+  "overrides": [
+    {
+      "name": "fmt",
+      "version": "10.1.1"
     }
   ]
 }
