@@ -1,2 +1,5 @@
 # Internal libraries CMakeLists.txt
-# Placeholder for internal library build configuration
+# Build configuration for internal project libraries
+
+# Add the core library
+add_subdirectory(core)

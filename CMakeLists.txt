@@ -31,8 +31,29 @@ set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 # Add custom CMake modules (Requirement 4.1)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
+# vcpkg integration (Requirement 3.3)
+# Note: vcpkg toolchain should be set via CMAKE_TOOLCHAIN_FILE
+# Example: cmake -DCMAKE_TOOLCHAIN_FILE=/path/to/vcpkg/scripts/buildsystems/vcpkg.cmake
+if(DEFINED CMAKE_TOOLCHAIN_FILE AND CMAKE_TOOLCHAIN_FILE MATCHES "vcpkg")
+    message(STATUS "Using vcpkg toolchain: ${CMAKE_TOOLCHAIN_FILE}")
+    # Set vcpkg target triplet if not already set
+    if(NOT DEFINED VCPKG_TARGET_TRIPLET)
+        if(WIN32)
+            set(VCPKG_TARGET_TRIPLET "x64-windows" CACHE STRING "vcpkg target triplet")
+        elseif(APPLE)
+            set(VCPKG_TARGET_TRIPLET "x64-osx" CACHE STRING "vcpkg target triplet")
+        else()
+            set(VCPKG_TARGET_TRIPLET "x64-linux" CACHE STRING "vcpkg target triplet")
+        endif()
+    endif()
+    message(STATUS "vcpkg target triplet: ${VCPKG_TARGET_TRIPLET}")
+endif()
+
 # Include custom compiler options
 include(CompilerOptions)
+
+# Include vcpkg helpers
+include(VcpkgHelpers)
 
 # Export compile commands for IDEs
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
