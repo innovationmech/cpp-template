@@ -1,0 +1,29 @@
+{
+  "name": "cpp-template",
+  "version": "1.0.0",
+  "description": "Modern C++ project template with CMake build system",
+  "homepage": "https://github.com/your-username/cpp-template",
+  "license": "MIT",
+  "dependencies": [
+    {
+      "name": "gtest",
+      "version>=": "1.12.0",
+      "features": ["gmock"]
+    }
+  ],
+  "features": {
+    "examples": {
+      "description": "Build example applications",
+      "dependencies": [
+        "fmt",
+        "spdlog"
+      ]
+    },
+    "benchmarks": {
+      "description": "Build benchmark applications",
+      "dependencies": [
+        "benchmark"
+      ]
+    }
+  }
+}

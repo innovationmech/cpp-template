@@ -1,0 +1,17 @@
+# Git submodules configuration
+# Add external dependencies as Git submodules here
+
+# Example submodule configuration:
+# [submodule "third_party/submodules/json"]
+#     path = third_party/submodules/json
+#     url = https://github.com/nlohmann/json.git
+#     branch = develop
+
+# [submodule "third_party/submodules/catch2"]
+#     path = third_party/submodules/catch2
+#     url = https://github.com/catchorg/Catch2.git
+#     branch = v3.x
+
+# To add a new submodule:
+# git submodule add <repository-url> third_party/submodules/<library-name>
+# git submodule update --init --recursive
