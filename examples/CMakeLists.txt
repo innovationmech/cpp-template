@@ -6,6 +6,25 @@ add_executable(dependency_demo dependency_demo.cpp)
 # Link against internal libraries
 target_link_libraries(dependency_demo PRIVATE core)
 
+# Add usage scenarios demonstration executable
+add_executable(usage_scenarios usage_scenarios.cpp)
+
+# Link required libraries for usage scenarios
+target_link_libraries(usage_scenarios
+    PRIVATE
+        core
+        example-module
+        example_lib
+        nlohmann_json::nlohmann_json
+)
+
+# Set target properties for usage scenarios
+set_target_properties(usage_scenarios PROPERTIES
+    CXX_STANDARD 17
+    CXX_STANDARD_REQUIRED ON
+    CXX_EXTENSIONS OFF
+)
+
 # Link against manual dependencies
 if(TARGET manual::example_lib)
     target_link_libraries(dependency_demo PRIVATE manual::example_lib)

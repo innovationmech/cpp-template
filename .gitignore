@@ -128,3 +128,6 @@ docs/latex/
 .env
 .env.local
 config.local.*
+
+# Validation reports (generated files)
+validation_reports/
