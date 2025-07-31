@@ -1,58 +1,327 @@
-# C++ build artifacts
+# =============================================================================
+# C++ Project .gitignore
+# Comprehensive ignore patterns for modern C++ development
+# =============================================================================
+
+# =============================================================================
+# C++ Build Artifacts
+# =============================================================================
 *.o
 *.obj
 *.exe
 *.dll
 *.so
+*.so.*
 *.dylib
 *.a
 *.lib
+*.pdb
+*.ilk
+*.exp
+*.map
+*.tlog
+*.idb
+*.ipch
+*.pch
+*.gch
+*.res
+*.rc
+*.manifest
 
-# CMake build directories
+# =============================================================================
+# CMake Build System
+# =============================================================================
+# Build directories
 build/
+build-*/
 cmake-build-*/
+out/
+_build/
+_builds/
+
+# CMake generated files
 CMakeFiles/
 CMakeCache.txt
 cmake_install.cmake
+install_manifest.txt
+CPackConfig.cmake
+CPackSourceConfig.cmake
 Makefile
 *.cmake
 !CMakeLists.txt
 !cmake/*.cmake
+!cmake/modules/*.cmake
 
-# IDE files
+# CMake testing
+Testing/
+CTestTestfile.cmake
+DartConfiguration.tcl
+
+# =============================================================================
+# IDE and Editor Files
+# =============================================================================
+# Visual Studio Code
 .vscode/
+*.code-workspace
+
+# Visual Studio
+.vs/
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*.sln
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# CLion / IntelliJ
 .idea/
+cmake-build-*/
+
+# Qt Creator
+*.pro.user
+*.pro.user.*
+*.qbs.user
+*.qbs.user.*
+*.moc
+*.moc.cpp
+*.qm
+*.prl
+
+# Xcode
+*.xcodeproj/
+*.xcworkspace/
+xcuserdata/
+*.moved-aside
+DerivedData/
+*.hmap
+*.ipa
+
+# Vim/Neovim
 *.swp
 *.swo
 *~
+.netrwhist
+tags
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Kiro IDE
 .kiro/
 
-# OS generated files
+# =============================================================================
+# Operating System Files
+# =============================================================================
+# macOS
 .DS_Store
 .DS_Store?
 ._*
 .Spotlight-V100
 .Trashes
+.fseventsd
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Windows
 ehthumbs.db
 Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
 
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# =============================================================================
+# Package Managers and Dependencies
+# =============================================================================
 # vcpkg
 vcpkg_installed/
 .vcpkg-root
+vcpkg-manifest-install.log
 
-# Temporary files
+# Conan
+conan.lock
+conanbuildinfo.*
+conandata.yml
+graph_info.json
+conanfile.pyc
+
+# Hunter
+_3rdParty/
+.hunter/
+
+# CPM
+_deps/
+
+# =============================================================================
+# Compiled Output and Binaries
+# =============================================================================
+# Output directories
+bin/
+lib/
+libs/
+dist/
+release/
+debug/
+
+# Executable files
+*.exe
+*.out
+*.app
+
+# =============================================================================
+# Temporary and Cache Files
+# =============================================================================
 *.tmp
 *.temp
 *.log
+*.cache
+*.pid
+*.seed
+*.pid.lock
 
-# Compiled binaries
-bin/
-lib/
+# Backup files
+*.bak
+*.backup
+*.old
+*.orig
 
+# =============================================================================
+# Documentation Build
+# =============================================================================
+# Doxygen
+html/
+latex/
+man/
+rtf/
+xml/
+Doxyfile.bak
+
+# Sphinx
+_build/
+_static/
+_templates/
+
+# =============================================================================
+# Testing and Coverage
+# =============================================================================
 # Test results
-Testing/
-CTestTestfile.cmake
+*.xml
+*.junit
+test_results/
+test_reports/
 
-# Package managers
-conan.lock
-conanbuildinfo.*
+# Coverage reports
+*.gcov
+*.gcda
+*.gcno
+coverage/
+coverage.info
+lcov.info
+*.profdata
+*.profraw
+
+# Google Test
+gtest_*.xml
+
+# =============================================================================
+# Profiling and Debugging
+# =============================================================================
+# Profiling data
+*.prof
+*.gprof
+perf.data*
+callgrind.out.*
+massif.out.*
+cachegrind.out.*
+
+# Debugging
+core
+core.*
+vgcore.*
+*.dmp
+
+# =============================================================================
+# Static Analysis
+# =============================================================================
+# Clang static analyzer
+scan-build/
+
+# PVS-Studio
+PVS-Studio.log
+*.PVS-Studio.cfg
+
+# Cppcheck
+cppcheck-build-dir/
+
+# =============================================================================
+# Continuous Integration
+# =============================================================================
+# GitHub Actions
+.github/workflows/*.log
+
+# Jenkins
+.jenkins/
+
+# =============================================================================
+# Environment and Configuration
+# =============================================================================
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Local configuration
+local.properties
+config.local.*
+
+# =============================================================================
+# Archive and Compressed Files
+# =============================================================================
+*.zip
+*.tar
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.rar
+*.7z
+
+# =============================================================================
+# Custom Project Specific
+# =============================================================================
+# Validation script outputs
+validation_results.txt
+
+# Local development builds
+build-local/
+build-dev/
+build-test/
+
+# Third-party downloads (if not using submodules)
+downloads/
+external/
+
+# Generated documentation
+docs/generated/

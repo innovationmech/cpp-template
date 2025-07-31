@@ -4,17 +4,11 @@
   "description": "Modern C++ Project Template",
   "homepage": "https://github.com/example/cpp-template",
   "license": "MIT",
+  "builtin-baseline": "897ba2ab4c4c776b985ab1f599548fcf3ae598ba",
   "dependencies": [
-    {
-      "name": "gtest",
-      "features": ["gmock"]
-    },
+    "gtest",
     "fmt",
-    "spdlog",
-    {
-      "name": "nlohmann-json",
-      "version>=": "3.11.0"
-    },
+    "nlohmann-json",
     {
       "name": "cpprestsdk",
       "platform": "!uwp"
