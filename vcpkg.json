@@ -1,0 +1,11 @@
+{
+  "name": "cpp-template",
+  "version": "1.0.0",
+  "description": "Modern C++ Project Template",
+  "dependencies": [
+    {
+      "name": "gtest",
+      "features": ["gmock"]
+    }
+  ]
+}
