@@ -181,7 +181,8 @@ _deps/
 # Output directories
 bin/
 lib/
-libs/
+# Note: libs/ contains source code, not build artifacts
+# Only ignore specific build output directories
 dist/
 release/
 debug/
@@ -258,7 +259,8 @@ massif.out.*
 cachegrind.out.*
 
 # Debugging
-core
+# Core dump files (but not our libs/core/ directory)
+/core
 core.*
 vgcore.*
 *.dmp
