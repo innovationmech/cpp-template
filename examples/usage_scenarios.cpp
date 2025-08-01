@@ -10,8 +10,8 @@
  * @date 2024
  */
 
-#include "core/core.h"
-#include "modules/example/example_module.h"
+#include "cpp-template/core/core.hpp"
+#include "modules/example/example_module.hpp"
 #include "example_lib/math_utils.h"
 #include <nlohmann/json.hpp>
 #include <iostream>
@@ -34,13 +34,13 @@ namespace scenario_basic {
     
     class UserDataProcessor {
     private:
-        std::unique_ptr<Core> core_;
-        std::unique_ptr<ExampleModule> module_;
+        std::unique_ptr<cpp_template::core::Core> core_;
+        std::unique_ptr<cpp_template::modules::ExampleModule> module_;
         
     public:
         UserDataProcessor() {
-            core_ = std::make_unique<Core>();
-            module_ = std::make_unique<ExampleModule>("UserProcessor");
+            core_ = std::make_unique<cpp_template::core::Core>();
+            module_ = std::make_unique<cpp_template::modules::ExampleModule>("UserProcessor");
             
             if (!core_->initialize()) {
                 throw std::runtime_error("Failed to initialize core system");
@@ -48,11 +48,8 @@ namespace scenario_basic {
         }
         
         std::string processUserInput(const std::string& input) {
-            // First process through core
-            std::string core_result = core_->process(input);
-            
-            // Then process through module
-            std::string final_result = module_->process(core_result);
+            // Process through module (Core doesn't have a process method)
+            std::string final_result = module_->processData(input);
             
             return final_result;
         }
@@ -60,9 +57,9 @@ namespace scenario_basic {
         void displayStatistics() {
             auto stats = module_->getStatistics();
             std::cout << "Processing Statistics:\n";
-            std::cout << "  Module: " << stats.module_name << "\n";
-            std::cout << "  Processed: " << stats.process_count << " items\n";
-            std::cout << "  Core Version: " << stats.core_version << "\n";
+            for (const auto& stat : stats) {
+                std::cout << "  " << stat << "\n";
+            }
         }
     };
     
@@ -101,7 +98,7 @@ namespace scenario_math {
     
     class MathematicalProcessor {
     private:
-        Core core_;
+        cpp_template::core::Core core_;
         
     public:
         MathematicalProcessor() {
@@ -115,36 +112,40 @@ namespace scenario_math {
             
             // Basic arithmetic
             int a = 15, b = 25;
-            std::cout << "Factorial of 7: " << example_lib::factorial(7) << "\n";
-            std::cout << "GCD of " << a << " and " << b << ": " << example_lib::gcd(a, b) << "\n";
+            std::cout << "Factorial of 7: " << example_lib::MathUtils::factorial(7) << "\n";
+            std::cout << "GCD of " << a << " and " << b << ": " << example_lib::MathUtils::gcd(a, b) << "\n";
             
             // Prime number checking
             std::vector<int> test_numbers = {17, 25, 31, 42, 97};
             std::cout << "Prime number tests:\n";
             for (int num : test_numbers) {
-                bool is_prime = example_lib::is_prime(num);
+                bool is_prime = example_lib::MathUtils::isPrime(num);
                 std::cout << "  " << num << " is " << (is_prime ? "prime" : "not prime") << "\n";
             }
             
-            // Power calculations
+            // Power calculations (using simple multiplication since power method doesn't exist)
+            int power_2_10 = 1;
+            for (int i = 0; i < 10; ++i) power_2_10 *= 2;
+            int power_3_5 = 1;
+            for (int i = 0; i < 5; ++i) power_3_5 *= 3;
             std::cout << "Power calculations:\n";
-            std::cout << "  2^10 = " << example_lib::power(2, 10) << "\n";
-            std::cout << "  3^5 = " << example_lib::power(3, 5) << "\n";
+            std::cout << "  2^10 = " << power_2_10 << "\n";
+            std::cout << "  3^5 = " << power_3_5 << "\n";
         }
         
         json generateMathReport() {
             json report;
             report["application"] = "Mathematical Processor";
-            report["core_version"] = Core::getVersion();
+            report["core_version"] = cpp_template::core::Core::getVersion();
             report["timestamp"] = std::chrono::duration_cast<std::chrono::seconds>(
                 std::chrono::system_clock::now().time_since_epoch()).count();
             
             // Add calculation results
             report["calculations"] = {
-                {"factorial_7", example_lib::factorial(7)},
-                {"gcd_15_25", example_lib::gcd(15, 25)},
-                {"is_17_prime", example_lib::is_prime(17)},
-                {"power_2_10", example_lib::power(2, 10)}
+                {"factorial_7", example_lib::MathUtils::factorial(7)},
+                {"gcd_15_25", example_lib::MathUtils::gcd(15, 25)},
+                {"is_17_prime", example_lib::MathUtils::isPrime(17)},
+                {"power_2_10", 1024}
             };
             
             return report;
@@ -179,8 +180,8 @@ namespace scenario_config {
     class ConfigurationManager {
     private:
         json config_;
-        Core core_;
-        std::vector<std::unique_ptr<ExampleModule>> modules_;
+        cpp_template::core::Core core_;
+        std::vector<std::unique_ptr<cpp_template::modules::ExampleModule>> modules_;
         
     public:
         ConfigurationManager() {
@@ -225,17 +226,17 @@ namespace scenario_config {
             auto modules_config = config_["modules"];
             
             if (modules_config["data_processor"]["enabled"]) {
-                modules_.push_back(std::make_unique<ExampleModule>("DataProcessor"));
+                modules_.push_back(std::make_unique<cpp_template::modules::ExampleModule>("DataProcessor"));
                 std::cout << "Initialized DataProcessor module\n";
             }
             
             if (modules_config["text_analyzer"]["enabled"]) {
-                modules_.push_back(std::make_unique<ExampleModule>("TextAnalyzer"));
+                modules_.push_back(std::make_unique<cpp_template::modules::ExampleModule>("TextAnalyzer"));
                 std::cout << "Initialized TextAnalyzer module\n";
             }
             
             if (modules_config["file_handler"]["enabled"]) {
-                modules_.push_back(std::make_unique<ExampleModule>("FileHandler"));
+                modules_.push_back(std::make_unique<cpp_template::modules::ExampleModule>("FileHandler"));
                 std::cout << "Initialized FileHandler module\n";
             }
         }
@@ -243,12 +244,9 @@ namespace scenario_config {
         void processData(const std::string& data) {
             std::string current_data = data;
             
-            // Process through core first
-            current_data = core_.process(current_data);
-            
-            // Then through each enabled module
+            // Process through each enabled module (Core doesn't have a process method)
             for (auto& module : modules_) {
-                current_data = module->process(current_data);
+                current_data = module->processData(current_data);
             }
             
             std::cout << "Final processed data: " << current_data << "\n";
@@ -313,8 +311,8 @@ namespace scenario_performance {
     
     class PerformanceBenchmark {
     private:
-        Core core_;
-        std::vector<std::unique_ptr<ExampleModule>> modules_;
+        cpp_template::core::Core core_;
+        std::vector<std::unique_ptr<cpp_template::modules::ExampleModule>> modules_;
         
         struct BenchmarkResult {
             std::string operation;
@@ -333,7 +331,7 @@ namespace scenario_performance {
             
             // Create multiple modules for testing
             for (int i = 0; i < 3; ++i) {
-                modules_.push_back(std::make_unique<ExampleModule>("BenchModule" + std::to_string(i)));
+                modules_.push_back(std::make_unique<cpp_template::modules::ExampleModule>("BenchModule" + std::to_string(i)));
             }
         }
         
@@ -366,21 +364,21 @@ namespace scenario_performance {
             const size_t iterations = 10000;
             const std::string test_data = "Performance test data for benchmarking";
             
-            // Benchmark core processing
-            measurePerformance("Core Processing", iterations, [&]() {
-                core_.process(test_data);
-            });
+            // Benchmark core processing (Core doesn't have process method, skip this test)
+            // measurePerformance("Core Processing", iterations, [&]() {
+            //     core_.process(test_data);
+            // });
             
             // Benchmark module processing
             measurePerformance("Module Processing", iterations, [&]() {
-                modules_[0]->process(test_data);
+                modules_[0]->processData(test_data);
             });
             
             // Benchmark mathematical operations
             measurePerformance("Mathematical Operations", iterations, [&]() {
-                example_lib::factorial(10);
-                example_lib::gcd(48, 18);
-                example_lib::is_prime(97);
+                example_lib::MathUtils::factorial(10);
+                example_lib::MathUtils::gcd(48, 18);
+                example_lib::MathUtils::isPrime(97);
             });
             
             // Benchmark JSON operations
@@ -414,7 +412,7 @@ namespace scenario_performance {
         json generateBenchmarkReport() {
             json report;
             report["benchmark_info"] = {
-                {"core_version", Core::getVersion()},
+                {"core_version", cpp_template::core::Core::getVersion()},
                 {"timestamp", std::chrono::duration_cast<std::chrono::seconds>(
                     std::chrono::system_clock::now().time_since_epoch()).count()},
                 {"total_operations", results_.size()}

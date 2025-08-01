@@ -9,6 +9,11 @@ target_link_libraries(dependency_demo PRIVATE core)
 # Add usage scenarios demonstration executable
 add_executable(usage_scenarios usage_scenarios.cpp)
 
+# Add include directories for usage scenarios
+target_include_directories(usage_scenarios PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+)
+
 # Link required libraries for usage scenarios
 target_link_libraries(usage_scenarios
     PRIVATE
