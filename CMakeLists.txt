@@ -325,6 +325,10 @@ add_subdirectory(src)
 message(STATUS "Configuring tests...")
 add_subdirectory(tests)
 
+# 5. Examples (depends on all previous components)
+message(STATUS "Configuring examples...")
+add_subdirectory(examples)
+
 message(STATUS "=== Configuration Complete ===")
 
 # =============================================================================
