@@ -1,12 +1,11 @@
 #include "core/core.h"
-#include "core/utils.h"
 #include <stdexcept>
+#include "core/utils.h"
 
 namespace cpp_template {
 namespace core {
 
-Core::Core(const std::string& name) 
-    : name_(name), initialized_(false) {
+Core::Core(const std::string& name) : name_(name), initialized_(false) {
     if (utils::validation::isEmpty(name)) {
         throw std::invalid_argument("Core name cannot be empty");
     }
@@ -27,7 +26,7 @@ std::string Core::process(const std::string& input) const {
     if (!initialized_) {
         throw std::runtime_error("Core must be initialized before processing");
     }
-    
+
     // Demonstrate processing by converting to uppercase and adding prefix
     std::string processed = utils::string::toUpper(input);
     return "[" + name_ + "] " + processed;
@@ -35,9 +34,9 @@ std::string Core::process(const std::string& input) const {
 
 bool Core::initialize() {
     if (initialized_) {
-        return true; // Already initialized
+        return true;  // Already initialized
     }
-    
+
     // Simulate initialization process
     // In a real implementation, this might set up resources, connections, etc.
     initialized_ = true;
@@ -52,5 +51,5 @@ std::unique_ptr<Core> createCore(const std::string& name) {
     return std::make_unique<Core>(name);
 }
 
-} // namespace core
-} // namespace cpp_template
+}  // namespace core
+}  // namespace cpp_template

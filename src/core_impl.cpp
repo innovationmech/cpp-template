@@ -1,24 +1,22 @@
-#include "cpp-template/core.h"
-#include "core/core.h" // Internal core library
 #include <stdexcept>
+#include "core/core.h"  // Internal core library
+#include "cpp-template/core.h"
 
 namespace cpp_template {
 
 // PIMPL implementation class
 class Core::Impl {
-public:
+  public:
     explicit Impl(const std::string& name) : internal_core_(name) {}
-    
+
     core::Core internal_core_;
 };
 
-Core::Core(const std::string& name) 
-    : pImpl_(std::make_unique<Impl>(name)) {
-}
+Core::Core(const std::string& name) : pImpl_(std::make_unique<Impl>(name)) {}
 
 Core::~Core() = default;
 
-Core::Core(const Core& other) 
+Core::Core(const Core& other)
     : pImpl_(std::make_unique<Impl>(other.pImpl_->internal_core_.getName())) {
     pImpl_->internal_core_ = other.pImpl_->internal_core_;
 }
@@ -62,4 +60,4 @@ std::string getVersion() {
     return "1.0.0";
 }
 
-} // namespace cpp_template
+}  // namespace cpp_template

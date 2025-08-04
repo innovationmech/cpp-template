@@ -1,0 +1,78 @@
+# =============================================================================
+# .cppcheck-suppressions - cppcheck Suppressions Configuration
+# This file contains suppressions for cppcheck warnings that are either
+# false positives or intentionally ignored for this project.
+#
+# Format: suppression-type[:filename[:line]]
+# Examples:
+#   missingInclude              # Suppress globally
+#   unusedFunction:tests/*      # Suppress in test files
+#   nullPointer:src/main.cpp:42 # Suppress specific line
+# =============================================================================
+
+# System and third-party related suppressions
+missingIncludeSystem
+missingInclude:*/third_party/*
+unmatchedSuppression
+
+# Test-specific suppressions
+unusedFunction:*/tests/*
+unusedFunction:*/examples/*
+
+# Build system related
+preprocessorErrorDirective:*/build/*
+
+# Platform-specific suppressions
+# These may be needed depending on your target platforms
+
+# Windows-specific
+#cstyleCast:*/platform/windows_utils.cpp
+#nullPointerRedundantCheck:*/platform/windows_utils.cpp
+
+# Linux-specific
+#knownConditionTrueFalse:*/platform/linux_utils.cpp
+
+# macOS-specific
+#unusedStructMember:*/platform/macos_utils.cpp
+
+# Template and header-only library related
+# Suppress for header files that may have unused functions
+#unusedFunction:*/include/*
+
+# Performance-related suppressions that may be acceptable
+# Uncomment these if you want to allow certain performance trade-offs
+
+# Allow pass by value in certain cases
+#passedByValue:*/tests/*
+
+# Allow C-style casts in specific contexts (be careful with this)
+#cstyleCast:*/third_party/*
+
+# Allow certain variable scoping issues in examples
+#variableScope:*/examples/*
+
+# Suppress specific warnings for generated or auto-generated code
+# Add patterns here for any code generation tools you use
+
+# Example suppressions for common false positives:
+# Uncomment and modify as needed for your specific codebase
+
+# Common false positives in template code
+#functionStatic
+#functionConst
+
+# STL related false positives
+#stlFindInsert
+#useStlAlgorithm
+
+# Modern C++ feature related
+#noExplicitConstructor
+#noCopyConstructor
+#noOperatorEq
+
+# If you use custom assertion macros
+#assertWithSideEffect
+#duplicateBreak
+
+# Project-specific suppressions
+# Add your own suppressions below this line for project-specific issues

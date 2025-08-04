@@ -1,0 +1,276 @@
+name: Code Quality
+
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - '**.cpp'
+      - '**.hpp'
+      - '**.h'
+      - '**.cxx'
+      - '**.hxx'
+      - '**.cc'
+      - 'CMakeLists.txt'
+      - '**CMakeLists.txt'
+      - '**.cmake'
+      - '.clang-format'
+      - '.clang-tidy'
+      - '.cmake-format.yaml'
+  pull_request:
+    branches: [ master ]
+    paths:
+      - '**.cpp'
+      - '**.hpp'
+      - '**.h'
+      - '**.cxx'
+      - '**.hxx'
+      - '**.cc'
+      - 'CMakeLists.txt'
+      - '**CMakeLists.txt'
+      - '**.cmake'
+      - '.clang-format'
+      - '.clang-tidy'
+      - '.cmake-format.yaml'
+
+# Concurrency control - avoid canceling running quality checks to prevent instability
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # =============================================================================
+  # C++ Code Quality Analysis
+  # =============================================================================
+  cpp-quality:
+    name: C++ Code Quality
+    runs-on: ubuntu-24.04
+
+    permissions:
+      contents: read
+      pull-requests: write
+      checks: write
+      security-events: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Cache LLVM and Clang
+        id: cache-llvm
+        uses: actions/cache@v4
+        with:
+          path: |
+            C:/Program Files/LLVM
+            ./llvm
+          key: llvm-17-${{ runner.os }}
+
+      - name: Install LLVM and Clang
+        uses: KyleMayes/install-llvm-action@v2
+        with:
+          version: "17"
+          cached: ${{ steps.cache-llvm.outputs.cache-hit }}
+
+      - name: Install additional tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            cppcheck \
+            cmake \
+            ninja-build \
+            python3-pip \
+            libgtest-dev \
+            libgmock-dev
+
+          # Install cmake-format
+          pip3 install cmake-format pyyaml
+
+      - name: Configure CMake
+        run: |
+          cmake -B build -S . \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+            -DENABLE_CLANG_TIDY=OFF \
+            -DENABLE_CPPCHECK=OFF \
+            -G Ninja
+
+      - name: Build project (for compile_commands.json)
+        run: cmake --build build --target all
+
+      - name: Run C++ Linter
+        uses: cpp-linter/cpp-linter-action@v2
+        id: linter
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          # Style and configuration
+          style: 'file'  # Use .clang-format
+          tidy-checks: '' # Use .clang-tidy
+
+          # File patterns to check
+          files-changed-only: ${{ github.event_name == 'pull_request' }}
+          ignore: |
+            third_party
+            build
+            .git
+
+          # Extensions to check
+          extensions: 'cpp,hpp,h,cxx,hxx,cc,C++,H++,c++,h++'
+
+          # Database for clang-tidy
+          database: 'build'
+
+          # Output and reporting
+          verbosity: 'info'
+          lines-changed-only: ${{ github.event_name == 'pull_request' }}
+          file-annotations: true
+          thread-comments: ${{ github.event_name == 'pull_request' }}
+          step-summary: true
+
+          # Fail conditions
+          format-review: true
+          tidy-review: true
+
+          # Additional tools
+          extra-args: |
+            --std=c++17
+            --enable-all
+            --inline-suppr
+
+          # Version specification
+          version: '17'
+
+      - name: Upload SARIF results
+        if: always() && steps.linter.conclusion != 'skipped'
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: cpp-linter.sarif
+          category: cpp-linter
+        continue-on-error: true
+
+      - name: Fail fast on quality issues
+        if: steps.linter.conclusion == 'failure'
+        run: |
+          echo "❌ Code quality checks failed!"
+          echo "Please check the cpp-linter output above for details."
+          echo "Common issues:"
+          echo "  - Code formatting violations (run: cmake --build build --target fix-format)"
+          echo "  - Static analysis warnings (review clang-tidy suggestions)"
+          echo "  - Code style issues (follow project guidelines)"
+          exit 1
+
+  # =============================================================================
+  # CMake File Quality Check
+  # =============================================================================
+  cmake-quality:
+    name: CMake Code Quality
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install cmake-format
+        run: |
+          pip install cmake-format pyyaml
+
+      - name: Check CMake formatting
+        run: |
+          echo "🔍 Checking CMake file formatting..."
+
+          # Find all CMake files
+          cmake_files=$(find . -name "CMakeLists.txt" -o -name "*.cmake" | grep -v "./third_party" | grep -v "./build")
+
+          if [ -z "$cmake_files" ]; then
+            echo "No CMake files found to check"
+            exit 0
+          fi
+
+          echo "Found CMake files:"
+          echo "$cmake_files"
+
+          # Check formatting
+          format_issues=0
+          for file in $cmake_files; do
+            echo "Checking $file..."
+            if ! cmake-format --config-file .cmake-format.yaml --check "$file"; then
+              echo "❌ $file has formatting issues"
+              format_issues=$((format_issues + 1))
+            else
+              echo "✅ $file is properly formatted"
+            fi
+          done
+
+          if [ $format_issues -gt 0 ]; then
+            echo ""
+            echo "❌ Found $format_issues CMake files with formatting issues"
+            echo "💡 Run 'cmake-format --config-file .cmake-format.yaml --in-place <file>' to fix"
+            echo "💡 Or run 'cmake --build build --target cmake-format' to fix all files"
+            exit 1
+          else
+            echo ""
+            echo "✅ All CMake files are properly formatted"
+          fi
+
+  # =============================================================================
+  # Code Quality Summary
+  # =============================================================================
+  quality-summary:
+    name: Quality Summary
+    runs-on: ubuntu-24.04
+    needs: [cpp-quality, cmake-quality]
+    if: always()
+
+    steps:
+      - name: Quality check summary
+        run: |
+          echo "## 📊 Code Quality Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ needs.cpp-quality.result }}" == "success" ]; then
+            echo "✅ **C++ Code Quality**: PASSED" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **C++ Code Quality**: FAILED" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ needs.cmake-quality.result }}" == "success" ]; then
+            echo "✅ **CMake Code Quality**: PASSED" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **CMake Code Quality**: FAILED" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🛠️ Available Commands" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Format code locally:**" >> $GITHUB_STEP_SUMMARY
+          echo '```bash' >> $GITHUB_STEP_SUMMARY
+          echo 'cmake --build build --target format-all' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Check code quality locally:**" >> $GITHUB_STEP_SUMMARY
+          echo '```bash' >> $GITHUB_STEP_SUMMARY
+          echo 'cmake --build build --target check-all' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Individual targets:**" >> $GITHUB_STEP_SUMMARY
+          echo '```bash' >> $GITHUB_STEP_SUMMARY
+          echo '# Formatting' >> $GITHUB_STEP_SUMMARY
+          echo 'cmake --build build --target fix-format     # Fix C++ formatting' >> $GITHUB_STEP_SUMMARY
+          echo 'cmake --build build --target cmake-format   # Fix CMake formatting' >> $GITHUB_STEP_SUMMARY
+          echo '' >> $GITHUB_STEP_SUMMARY
+          echo '# Analysis' >> $GITHUB_STEP_SUMMARY
+          echo 'cmake --build build --target clang-tidy-check # Run clang-tidy' >> $GITHUB_STEP_SUMMARY
+          echo 'cmake --build build --target cppcheck-check   # Run cppcheck' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Final status
+        if: needs.cpp-quality.result != 'success' || needs.cmake-quality.result != 'success'
+        run: |
+          echo "❌ Code quality checks failed. Please fix the issues and try again."
+          exit 1

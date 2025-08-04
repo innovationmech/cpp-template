@@ -1,7 +1,5 @@
-# FindCustomLib.cmake
-# Example CMake find module for system package management
-# This demonstrates how to create custom find modules for libraries
-# that don't provide their own CMake configuration files
+# FindCustomLib.cmake Example CMake find module for system package management This demonstrates how
+# to create custom find modules for libraries that don't provide their own CMake configuration files
 
 #[=======================================================================[.rst:
 FindCustomLib
@@ -52,57 +50,49 @@ set(CUSTOMLIB_NAMES customlib custom_lib)
 set(CUSTOMLIB_HEADER_NAMES customlib.h custom_lib.h)
 
 # Search for the library in common system locations
-find_library(CUSTOMLIB_LIBRARY
+find_library(
+    CUSTOMLIB_LIBRARY
     NAMES ${CUSTOMLIB_NAMES}
-    PATHS
-        ${PC_CUSTOMLIB_LIBRARY_DIRS}              # pkg-config paths
-        ${CUSTOMLIB_ROOT}                         # User-specified root
-        ${CMAKE_CURRENT_SOURCE_DIR}/third_party/manual/customlib  # Manual fallback
-        # macOS Homebrew paths
-        /opt/homebrew/lib                         # Apple Silicon Homebrew
-        /usr/local/lib                            # Intel Homebrew / Linux standard
-        /usr/local/Cellar/customlib/*/lib         # Homebrew versioned path
-        # Linux standard paths
-        /usr/lib
-        /usr/lib64
-        /usr/lib/x86_64-linux-gnu                 # Ubuntu/Debian multiarch
-        /usr/lib/aarch64-linux-gnu                # Ubuntu/Debian ARM64
-        # MacPorts
-        /opt/local/lib
-        # Other common paths
-        ${CMAKE_PREFIX_PATH}/lib
-    PATH_SUFFIXES
-        lib
-        lib64
-        customlib
-    DOC "CustomLib library"
-)
+    PATHS ${PC_CUSTOMLIB_LIBRARY_DIRS} # pkg-config paths
+          ${CUSTOMLIB_ROOT} # User-specified root
+          ${CMAKE_CURRENT_SOURCE_DIR}/third_party/manual/customlib # Manual fallback
+          # macOS Homebrew paths
+          /opt/homebrew/lib # Apple Silicon Homebrew
+          /usr/local/lib # Intel Homebrew / Linux standard
+          /usr/local/Cellar/customlib/*/lib # Homebrew versioned path
+          # Linux standard paths
+          /usr/lib
+          /usr/lib64
+          /usr/lib/x86_64-linux-gnu # Ubuntu/Debian multiarch
+          /usr/lib/aarch64-linux-gnu # Ubuntu/Debian ARM64
+          # MacPorts
+          /opt/local/lib
+          # Other common paths
+          ${CMAKE_PREFIX_PATH}/lib
+    PATH_SUFFIXES lib lib64 customlib
+    DOC "CustomLib library")
 
 # Search for the header files in common system locations
-find_path(CUSTOMLIB_INCLUDE_DIR
+find_path(
+    CUSTOMLIB_INCLUDE_DIR
     NAMES ${CUSTOMLIB_HEADER_NAMES}
-    PATHS
-        ${PC_CUSTOMLIB_INCLUDE_DIRS}              # pkg-config paths
-        ${CUSTOMLIB_ROOT}                         # User-specified root
-        ${CMAKE_CURRENT_SOURCE_DIR}/third_party/manual/customlib  # Manual fallback
-        # macOS Homebrew paths
-        /opt/homebrew/include                     # Apple Silicon Homebrew
-        /usr/local/include                        # Intel Homebrew / Linux standard
-        /usr/local/Cellar/customlib/*/include     # Homebrew versioned path
-        # Linux standard paths
-        /usr/include
-        /usr/include/x86_64-linux-gnu             # Ubuntu/Debian multiarch
-        /usr/include/aarch64-linux-gnu            # Ubuntu/Debian ARM64
-        # MacPorts
-        /opt/local/include
-        # Other common paths
-        ${CMAKE_PREFIX_PATH}/include
-    PATH_SUFFIXES
-        include
-        customlib
-        CustomLib
-    DOC "CustomLib include directory"
-)
+    PATHS ${PC_CUSTOMLIB_INCLUDE_DIRS} # pkg-config paths
+          ${CUSTOMLIB_ROOT} # User-specified root
+          ${CMAKE_CURRENT_SOURCE_DIR}/third_party/manual/customlib # Manual fallback
+          # macOS Homebrew paths
+          /opt/homebrew/include # Apple Silicon Homebrew
+          /usr/local/include # Intel Homebrew / Linux standard
+          /usr/local/Cellar/customlib/*/include # Homebrew versioned path
+          # Linux standard paths
+          /usr/include
+          /usr/include/x86_64-linux-gnu # Ubuntu/Debian multiarch
+          /usr/include/aarch64-linux-gnu # Ubuntu/Debian ARM64
+          # MacPorts
+          /opt/local/include
+          # Other common paths
+          ${CMAKE_PREFIX_PATH}/include
+    PATH_SUFFIXES include customlib CustomLib
+    DOC "CustomLib include directory")
 
 # Try to extract version information from multiple sources
 set(CUSTOMLIB_VERSION "")
@@ -115,8 +105,8 @@ endif()
 # Then try to extract from header file
 if(CUSTOMLIB_INCLUDE_DIR AND EXISTS "${CUSTOMLIB_INCLUDE_DIR}/customlib.h")
     file(STRINGS "${CUSTOMLIB_INCLUDE_DIR}/customlib.h" CUSTOMLIB_VERSION_LINES
-        REGEX "^#define[ \t]+CUSTOMLIB_VERSION")
-    
+         REGEX "^#define[ \t]+CUSTOMLIB_VERSION")
+
     foreach(line ${CUSTOMLIB_VERSION_LINES})
         # Try different version definition patterns
         if(line MATCHES "^#define[ \t]+CUSTOMLIB_VERSION[ \t]+\"([^\"]+)\"")
@@ -130,7 +120,7 @@ if(CUSTOMLIB_INCLUDE_DIR AND EXISTS "${CUSTOMLIB_INCLUDE_DIR}/customlib.h")
             set(CUSTOMLIB_VERSION_PATCH ${CMAKE_MATCH_1})
         endif()
     endforeach()
-    
+
     # Construct version from components if not found as string
     if(NOT CUSTOMLIB_VERSION AND CUSTOMLIB_VERSION_MAJOR)
         set(CUSTOMLIB_VERSION "${CUSTOMLIB_VERSION_MAJOR}")
@@ -143,40 +133,34 @@ if(CUSTOMLIB_INCLUDE_DIR AND EXISTS "${CUSTOMLIB_INCLUDE_DIR}/customlib.h")
     endif()
 endif()
 
-# Use FindPackageHandleStandardArgs to handle the REQUIRED and QUIET arguments
-# and set CUSTOMLIB_FOUND to TRUE if all required variables are set
+# Use FindPackageHandleStandardArgs to handle the REQUIRED and QUIET arguments and set
+# CUSTOMLIB_FOUND to TRUE if all required variables are set
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(CustomLib
+find_package_handle_standard_args(
+    CustomLib
     FOUND_VAR CUSTOMLIB_FOUND
-    REQUIRED_VARS
-        CUSTOMLIB_LIBRARY
-        CUSTOMLIB_INCLUDE_DIR
+    REQUIRED_VARS CUSTOMLIB_LIBRARY CUSTOMLIB_INCLUDE_DIR
     VERSION_VAR CUSTOMLIB_VERSION
-    FAIL_MESSAGE "Could not find CustomLib library. Set CUSTOMLIB_ROOT to the installation directory."
-)
+    FAIL_MESSAGE
+        "Could not find CustomLib library. Set CUSTOMLIB_ROOT to the installation directory.")
 
 # Create imported target if found
 if(CUSTOMLIB_FOUND AND NOT TARGET CustomLib::CustomLib)
     add_library(CustomLib::CustomLib UNKNOWN IMPORTED)
-    set_target_properties(CustomLib::CustomLib PROPERTIES
-        IMPORTED_LOCATION "${CUSTOMLIB_LIBRARY}"
-        INTERFACE_INCLUDE_DIRECTORIES "${CUSTOMLIB_INCLUDE_DIR}"
-    )
-    
+    set_target_properties(
+        CustomLib::CustomLib PROPERTIES IMPORTED_LOCATION "${CUSTOMLIB_LIBRARY}"
+                                        INTERFACE_INCLUDE_DIRECTORIES "${CUSTOMLIB_INCLUDE_DIR}")
+
     # Set additional properties if needed
     if(CUSTOMLIB_VERSION)
-        set_target_properties(CustomLib::CustomLib PROPERTIES
-            INTERFACE_COMPILE_DEFINITIONS "CUSTOMLIB_VERSION=\"${CUSTOMLIB_VERSION}\""
-        )
+        set_target_properties(
+            CustomLib::CustomLib PROPERTIES INTERFACE_COMPILE_DEFINITIONS
+                                            "CUSTOMLIB_VERSION=\"${CUSTOMLIB_VERSION}\"")
     endif()
 endif()
 
 # Mark variables as advanced (they won't show up in cmake-gui by default)
-mark_as_advanced(
-    CUSTOMLIB_LIBRARY
-    CUSTOMLIB_INCLUDE_DIR
-    CUSTOMLIB_VERSION
-)
+mark_as_advanced(CUSTOMLIB_LIBRARY CUSTOMLIB_INCLUDE_DIR CUSTOMLIB_VERSION)
 
 # Provide usage information and installation instructions
 if(CUSTOMLIB_FOUND)
@@ -197,11 +181,14 @@ else()
         elseif(UNIX AND NOT APPLE)
             # Detect Linux distribution
             if(EXISTS "/etc/debian_version")
-                message(STATUS "  Ubuntu/Debian: sudo apt update && sudo apt install libcustomlib-dev")
+                message(
+                    STATUS "  Ubuntu/Debian: sudo apt update && sudo apt install libcustomlib-dev")
             elseif(EXISTS "/etc/redhat-release" OR EXISTS "/etc/fedora-release")
                 message(STATUS "  Fedora/RHEL: sudo dnf install customlib-devel")
             else()
-                message(STATUS "  Linux: Install customlib development package via your package manager")
+                message(
+                    STATUS "  Linux: Install customlib development package via your package manager"
+                )
             endif()
         elseif(WIN32)
             message(STATUS "  Windows (Chocolatey): choco install customlib")

@@ -18,6 +18,7 @@ This guide provides comprehensive information for developers who want to extend,
 ### Directory Structure Philosophy
 
 The project follows a hierarchical structure that promotes:
+
 - **Separation of concerns**: Clear boundaries between different types of code
 - **Modularity**: Components can be developed and tested independently
 - **Reusability**: Libraries can be used across multiple applications
@@ -106,7 +107,7 @@ class DataProcessor {
 public:
     // Public methods: camelCase
     void processData();
-    
+
     // Public members: camelCase (avoid public data)
     int getCount() const;
 
@@ -150,20 +151,20 @@ public:
     // Public interface first
     ExampleClass();
     ~ExampleClass();
-    
+
     // Copy/move operations
     ExampleClass(const ExampleClass&) = delete;
     ExampleClass& operator=(const ExampleClass&) = delete;
     ExampleClass(ExampleClass&&) = default;
     ExampleClass& operator=(ExampleClass&&) = default;
-    
+
     // Main functionality
     void doSomething();
 
 private:
     // Private implementation
     void helperFunction();
-    
+
     // Data members last
     std::unique_ptr<Implementation> impl_;
 };
@@ -176,14 +177,14 @@ private:
 ```cpp
 /**
  * @brief Brief description of the class or function
- * 
+ *
  * Detailed description explaining the purpose, behavior, and usage.
  * Include examples when helpful.
- * 
+ *
  * @param parameter_name Description of the parameter
  * @return Description of the return value
  * @throws ExceptionType When this exception is thrown
- * 
+ *
  * @example
  * ```cpp
  * ExampleClass obj;
@@ -198,22 +199,24 @@ void doSomething(int parameter_name);
 ### Adding a New Internal Library
 
 1. **Create directory structure**:
+
    ```bash
    mkdir -p libs/newlib/{include/newlib,src}
    ```
 
 2. **Create CMakeLists.txt**:
+
    ```cmake
    # libs/newlib/CMakeLists.txt
    add_library(newlib STATIC)
-   
+
    target_sources(newlib
        PRIVATE
            src/newlib.cpp
        PUBLIC
            include/newlib/newlib.h
    )
-   
+
    target_include_directories(newlib
        PUBLIC
            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -221,22 +224,23 @@ void doSomething(int parameter_name);
        PRIVATE
            ${CMAKE_CURRENT_SOURCE_DIR}/src
    )
-   
+
    target_link_libraries(newlib
        PUBLIC
            core  # If it depends on core
    )
-   
+
    # Apply compiler options
    if(COMMAND apply_compiler_options)
        apply_compiler_options(newlib)
    endif()
-   
+
    # Create alias
    add_library(newlib::newlib ALIAS newlib)
    ```
 
 3. **Update parent CMakeLists.txt**:
+
    ```cmake
    # libs/CMakeLists.txt
    add_subdirectory(core)
@@ -244,40 +248,42 @@ void doSomething(int parameter_name);
    ```
 
 4. **Create public header**:
+
    ```cpp
    // libs/newlib/include/newlib/newlib.h
    #pragma once
-   
+
    namespace cpp_template {
    namespace newlib {
-   
+
    class NewLibrary {
    public:
        NewLibrary();
        ~NewLibrary();
-       
+
        void doSomething();
    };
-   
+
    } // namespace newlib
    } // namespace cpp_template
    ```
 
 5. **Create implementation**:
+
    ```cpp
    // libs/newlib/src/newlib.cpp
    #include "newlib/newlib.h"
-   
+
    namespace cpp_template {
    namespace newlib {
-   
+
    NewLibrary::NewLibrary() = default;
    NewLibrary::~NewLibrary() = default;
-   
+
    void NewLibrary::doSomething() {
        // Implementation
    }
-   
+
    } // namespace newlib
    } // namespace cpp_template
    ```
@@ -285,17 +291,19 @@ void doSomething(int parameter_name);
 ### Adding a New Application Module
 
 1. **Create module files**:
+
    ```bash
    touch src/modules/new_module.{h,cpp}
    ```
 
 2. **Update modules CMakeLists.txt**:
+
    ```cmake
    # src/modules/CMakeLists.txt
    add_library(new-module STATIC
        new_module.cpp
    )
-   
+
    target_include_directories(new-module
        PUBLIC
            ${CMAKE_CURRENT_SOURCE_DIR}
@@ -303,7 +311,7 @@ void doSomething(int parameter_name);
        PRIVATE
            ${CMAKE_SOURCE_DIR}/libs/core/include
    )
-   
+
    target_link_libraries(new-module
        PUBLIC
            core
@@ -311,6 +319,7 @@ void doSomething(int parameter_name);
    ```
 
 3. **Link in main application**:
+
    ```cmake
    # src/CMakeLists.txt
    target_link_libraries(cpp-template-app
@@ -325,38 +334,40 @@ void doSomething(int parameter_name);
 ### Adding Tests for New Components
 
 1. **Create test file**:
+
    ```cpp
    // tests/unit/newlib_test.cpp
    #include <gtest/gtest.h>
    #include "newlib/newlib.h"
-   
+
    namespace cpp_template {
    namespace newlib {
    namespace test {
-   
+
    class NewLibraryTest : public ::testing::Test {
    protected:
        void SetUp() override {
            library_ = std::make_unique<NewLibrary>();
        }
-       
+
        void TearDown() override {
            library_.reset();
        }
-       
+
        std::unique_ptr<NewLibrary> library_;
    };
-   
+
    TEST_F(NewLibraryTest, BasicFunctionality) {
        ASSERT_NO_THROW(library_->doSomething());
    }
-   
+
    } // namespace test
    } // namespace newlib
    } // namespace cpp_template
    ```
 
 2. **Add test to CMakeLists.txt**:
+
    ```cmake
    # tests/unit/CMakeLists.txt
    add_cpp_template_test(newlib
@@ -369,7 +380,8 @@ void doSomething(int parameter_name);
 
 ### Adding vcpkg Dependencies
 
-1. **Update vcpkg.json**:
+1. **Update vcpkg.JSON**:
+
    ```json
    {
      "dependencies": [
@@ -380,6 +392,7 @@ void doSomething(int parameter_name);
    ```
 
 2. **Use in CMake**:
+
    ```cmake
    find_package(NewDependency CONFIG REQUIRED)
    target_link_libraries(your_target PRIVATE NewDependency::NewDependency)
@@ -388,16 +401,17 @@ void doSomething(int parameter_name);
 ### Adding System Dependencies
 
 1. **Create find module** (if needed):
+
    ```cmake
    # cmake/FindNewDep.cmake
    find_path(NEWDEP_INCLUDE_DIR newdep.h)
    find_library(NEWDEP_LIBRARY newdep)
-   
+
    include(FindPackageHandleStandardArgs)
    find_package_handle_standard_args(NewDep
        REQUIRED_VARS NEWDEP_LIBRARY NEWDEP_INCLUDE_DIR
    )
-   
+
    if(NewDep_FOUND AND NOT TARGET NewDep::NewDep)
        add_library(NewDep::NewDep UNKNOWN IMPORTED)
        set_target_properties(NewDep::NewDep PROPERTIES
@@ -408,6 +422,7 @@ void doSomething(int parameter_name);
    ```
 
 2. **Use in project**:
+
    ```cmake
    find_package(NewDep REQUIRED)
    target_link_libraries(your_target PRIVATE NewDep::NewDep)
@@ -416,16 +431,18 @@ void doSomething(int parameter_name);
 ### Adding Manual Dependencies
 
 1. **Create directory structure**:
+
    ```bash
    mkdir -p third_party/manual/newdep/{include,src,lib}
    ```
 
 2. **Add to manual CMakeLists.txt**:
+
    ```cmake
    # third_party/manual/CMakeLists.txt
    check_manual_dependency("NewDep" "newdep" NEWDEP_AVAILABLE)
    if(NEWDEP_AVAILABLE)
-       create_header_only_target(manual_newdep 
+       create_header_only_target(manual_newdep
            "${CMAKE_CURRENT_SOURCE_DIR}/newdep/include"
        )
        add_library(third_party::newdep ALIAS manual_newdep)
@@ -458,11 +475,11 @@ protected:
     void SetUp() override {
         // Common setup
     }
-    
+
     void TearDown() override {
         // Common cleanup
     }
-    
+
     // Shared test data
     ComponentUnderTest component_;
 };
@@ -471,10 +488,10 @@ protected:
 TEST_F(ComponentTest, BasicOperation) {
     // Arrange
     auto input = createTestInput();
-    
+
     // Act
     auto result = component_.process(input);
-    
+
     // Assert
     EXPECT_EQ(expected_result, result);
 }
@@ -482,7 +499,7 @@ TEST_F(ComponentTest, BasicOperation) {
 // Error handling test
 TEST_F(ComponentTest, HandlesInvalidInput) {
     auto invalid_input = createInvalidInput();
-    
+
     EXPECT_THROW(component_.process(invalid_input), std::invalid_argument);
 }
 
@@ -525,13 +542,13 @@ public:
 // Using mocks in tests
 TEST_F(ComponentTest, UsesMockDependency) {
     auto mock_dep = std::make_shared<MockDependency>();
-    
+
     EXPECT_CALL(*mock_dep, getValue())
         .WillOnce(::testing::Return(42));
-    
+
     component_.setDependency(mock_dep);
     auto result = component_.calculate();
-    
+
     EXPECT_EQ(84, result);  // Assuming calculate() doubles the value
 }
 ```
@@ -581,11 +598,11 @@ target_compile_options(mylib PRIVATE
 # Reusable function for consistent target configuration
 function(configure_cpp_target TARGET_NAME)
     target_compile_features(${TARGET_NAME} PUBLIC cxx_std_17)
-    
+
     if(COMMAND apply_compiler_options)
         apply_compiler_options(${TARGET_NAME})
     endif()
-    
+
     set_target_properties(${TARGET_NAME} PROPERTIES
         CXX_EXTENSIONS OFF
         POSITION_INDEPENDENT_CODE ON
@@ -637,7 +654,7 @@ Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
 
 ### Release Process
 
-1. **Update version numbers** in CMakeLists.txt and vcpkg.json
+1. **Update version numbers** in CMakeLists.txt and vcpkg.JSON
 2. **Update CHANGELOG.md** with new features and fixes
 3. **Create release branch**: `git checkout -b release/v1.2.0`
 4. **Final testing** on all supported platforms

@@ -1,12 +1,12 @@
-#include <gtest/gtest.h>
-#include <gmock/gmock.h>
 #include "core/utils.h"
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 using namespace cpp_template::core::utils;
 
 // Test fixture for string utilities
 class StringUtilsTest : public ::testing::Test {
-protected:
+  protected:
     void SetUp() override {
         empty_string_ = "";
         simple_string_ = "hello";
@@ -152,7 +152,7 @@ TEST_F(StringUtilsTest, SplitJoinRoundTrip) {
 
 // Test fixture for validation utilities
 class ValidationUtilsTest : public ::testing::Test {
-protected:
+  protected:
     void SetUp() override {
         empty_string_ = "";
         whitespace_only_ = "   \t\n  ";
@@ -253,10 +253,11 @@ TEST_F(StringUtilsTest, LargeStringSplit) {
     // Create a large string with many parts
     std::string large_string;
     for (int i = 0; i < 1000; ++i) {
-        if (i > 0) large_string += ",";
+        if (i > 0)
+            large_string += ",";
         large_string += "part" + std::to_string(i);
     }
-    
+
     auto result = string::split(large_string, ',');
     EXPECT_EQ(result.size(), 1000);
     EXPECT_EQ(result[0], "part0");
@@ -269,7 +270,7 @@ TEST_F(StringUtilsTest, LargeVectorJoin) {
     for (int i = 0; i < 1000; ++i) {
         large_vector.push_back("item" + std::to_string(i));
     }
-    
+
     std::string result = string::join(large_vector, ",");
     EXPECT_TRUE(result.find("item0,item1") == 0);
     EXPECT_TRUE(result.find("item999") != std::string::npos);

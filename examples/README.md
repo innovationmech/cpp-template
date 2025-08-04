@@ -23,17 +23,17 @@ Demonstrates the fundamental usage of the core library:
 int main() {
     // Create a core instance
     auto core = cpp_template::createCore("ExampleCore");
-    
+
     // Initialize the core
     if (!core->initialize()) {
         std::cerr << "Failed to initialize core" << std::endl;
         return 1;
     }
-    
+
     // Process some data
     std::string result = core->process("Hello, World!");
     std::cout << "Processed result: " << result << std::endl;
-    
+
     return 0;
 }
 ```
@@ -49,21 +49,21 @@ Shows how to use the built-in string utility functions:
 
 int main() {
     using namespace cpp_template::string_utils;
-    
+
     std::string text = "Hello World Example";
-    
+
     // Case conversion
     std::cout << "Original: " << text << std::endl;
     std::cout << "Uppercase: " << toUpper(text) << std::endl;
     std::cout << "Lowercase: " << toLower(text) << std::endl;
-    
+
     // String splitting and joining
     auto words = split(text, ' ');
     std::cout << "Split into " << words.size() << " words" << std::endl;
-    
+
     std::string rejoined = join(words, "-");
     std::cout << "Rejoined: " << rejoined << std::endl;
-    
+
     return 0;
 }
 ```
@@ -79,7 +79,7 @@ Demonstrates input validation capabilities:
 
 int main() {
     using namespace cpp_template::validation;
-    
+
     std::vector<std::string> test_strings = {
         "hello123",      // alphanumeric
         "hello world",   // not alphanumeric
@@ -87,7 +87,7 @@ int main() {
         "user@example.com", // email
         "invalid-email"  // invalid email
     };
-    
+
     for (const auto& str : test_strings) {
         std::cout << "Testing: '" << str << "'" << std::endl;
         std::cout << "  Empty: " << (isEmpty(str) ? "yes" : "no") << std::endl;
@@ -95,7 +95,7 @@ int main() {
         std::cout << "  Valid email: " << (isValidEmail(str) ? "yes" : "no") << std::endl;
         std::cout << std::endl;
     }
-    
+
     return 0;
 }
 ```
@@ -117,54 +117,54 @@ int main() {
     try {
         // Create configuration manager
         auto config = cpp_template::modules::createConfigManager();
-        
+
         // Configure processing parameters
         config->setValue("processing.mode", "advanced");
         config->setValue("processing.batch_size", "3");
         config->setValue("app.debug", "true");
-        
+
         // Create data processor with configuration dependency
         auto processor = cpp_template::modules::createDataProcessor(
             std::shared_ptr<cpp_template::modules::ConfigManager>(config.release())
         );
-        
+
         // Process individual items
         std::vector<std::string> test_data = {
             "First item",
-            "Second item", 
+            "Second item",
             "Third item"
         };
-        
+
         std::cout << "=== Individual Processing ===" << std::endl;
         for (const auto& item : test_data) {
-            auto result = processor->processItem(item, 
+            auto result = processor->processItem(item,
                 cpp_template::modules::ProcessingMode::ADVANCED);
-            
+
             if (result.success) {
                 std::cout << "✓ " << result.result << std::endl;
             } else {
                 std::cout << "✗ Error: " << result.error_message << std::endl;
             }
         }
-        
+
         // Process as batch
         std::cout << "\n=== Batch Processing ===" << std::endl;
-        auto batch_result = processor->processBatch(test_data, 
+        auto batch_result = processor->processBatch(test_data,
             cpp_template::modules::ProcessingMode::BATCH);
-        
+
         if (batch_result.success) {
             std::cout << "Batch result: " << batch_result.result << std::endl;
             std::cout << "Items processed: " << batch_result.processed_items << std::endl;
         }
-        
+
         // Show statistics
         std::cout << "\n" << processor->getStatistics() << std::endl;
-        
+
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;
         return 1;
     }
-    
+
     return 0;
 }
 ```
@@ -193,41 +193,41 @@ void createSampleConfigFile(const std::string& filename) {
 
 int main() {
     auto config = cpp_template::modules::createConfigManager();
-    
+
     // Create and load from file
     std::string config_file = "sample_config.txt";
     createSampleConfigFile(config_file);
-    
+
     if (config->loadFromFile(config_file)) {
         std::cout << "Configuration loaded successfully!" << std::endl;
     } else {
         std::cout << "Using default configuration" << std::endl;
     }
-    
+
     // Display all configuration
     std::cout << "\n=== Current Configuration ===" << std::endl;
     auto keys = config->getAllKeys();
     for (const auto& key : keys) {
         std::cout << key << " = " << config->getValue(key) << std::endl;
     }
-    
+
     // Demonstrate runtime configuration changes
     std::cout << "\n=== Runtime Configuration Changes ===" << std::endl;
     config->setValue("runtime.setting", "dynamic_value");
     config->setValue("processing.mode", "optimized");
-    
+
     std::cout << "Added runtime settings:" << std::endl;
     std::cout << "runtime.setting = " << config->getValue("runtime.setting") << std::endl;
     std::cout << "processing.mode = " << config->getValue("processing.mode") << std::endl;
-    
+
     // Demonstrate default values
     std::cout << "\n=== Default Value Handling ===" << std::endl;
     std::string missing_key = config->getValue("non.existent.key", "default_value");
     std::cout << "Missing key with default: " << missing_key << std::endl;
-    
+
     // Clean up
     std::remove(config_file.c_str());
-    
+
     return 0;
 }
 ```
@@ -257,21 +257,21 @@ int main() {
     // Use cpp-template with third-party library
     auto core = cpp_template::createCore("JsonProcessor");
     core->initialize();
-    
+
     // Create JSON data
     nlohmann::json data = {
         {"name", "cpp-template"},
         {"version", "1.0.0"},
         {"features", {"modular", "modern", "tested"}}
     };
-    
+
     // Process JSON string with cpp-template
     std::string json_str = data.dump();
     std::string processed = core->process(json_str);
-    
+
     std::cout << "Original JSON: " << json_str << std::endl;
     std::cout << "Processed: " << processed << std::endl;
-    
+
     // Parse processed result back to JSON
     try {
         auto result_json = nlohmann::json::parse(processed);
@@ -279,7 +279,7 @@ int main() {
     } catch (const std::exception& e) {
         std::cout << "Processed result is not valid JSON: " << e.what() << std::endl;
     }
-    
+
     return 0;
 }
 ```
@@ -299,13 +299,13 @@ Demonstrates how to benchmark your code:
 class Timer {
 public:
     Timer() : start_(std::chrono::high_resolution_clock::now()) {}
-    
+
     double elapsed() const {
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start_);
         return duration.count() / 1000.0; // Return milliseconds
     }
-    
+
 private:
     std::chrono::high_resolution_clock::time_point start_;
 };
@@ -313,7 +313,7 @@ private:
 int main() {
     auto core = cpp_template::createCore("BenchmarkCore");
     core->initialize();
-    
+
     // Benchmark single operations
     std::cout << "=== Single Operation Benchmark ===" << std::endl;
     std::vector<std::string> test_data = {
@@ -322,34 +322,34 @@ int main() {
         "this is a much longer string that will take more time to process",
         std::string(1000, 'x') // Very long string
     };
-    
+
     for (const auto& data : test_data) {
         Timer timer;
         std::string result = core->process(data);
         double elapsed = timer.elapsed();
-        
-        std::cout << "Input length: " << data.length() 
+
+        std::cout << "Input length: " << data.length()
                   << ", Time: " << elapsed << " ms" << std::endl;
     }
-    
+
     // Benchmark batch operations
     std::cout << "\n=== Batch Operation Benchmark ===" << std::endl;
     std::vector<int> batch_sizes = {10, 100, 1000, 10000};
-    
+
     for (int size : batch_sizes) {
         std::vector<std::string> batch_data(size, "test string");
-        
+
         Timer timer;
         for (const auto& item : batch_data) {
             core->process(item);
         }
         double elapsed = timer.elapsed();
-        
-        std::cout << "Batch size: " << size 
+
+        std::cout << "Batch size: " << size
                   << ", Total time: " << elapsed << " ms"
                   << ", Avg per item: " << (elapsed / size) << " ms" << std::endl;
     }
-    
+
     return 0;
 }
 ```

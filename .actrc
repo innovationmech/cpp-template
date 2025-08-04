@@ -1,0 +1,45 @@
+# =============================================================================
+# .actrc - Configuration for act (GitHub Actions local runner)
+# This file configures act to run GitHub Actions workflows locally
+#
+# Installation:
+#   brew install act  # macOS
+#   # or download from: https://github.com/nektos/act/releases
+#
+# Usage:
+#   act                           # Run default event (push)
+#   act pull_request             # Run pull request workflows
+#   act -l                       # List available workflows
+#   act -n                       # Dry run (don't execute)
+#   act -j build                 # Run specific job
+# =============================================================================
+
+# Default platform images (lighter alternatives)
+-P ubuntu-latest=catthehacker/ubuntu:act-latest
+-P ubuntu-24.04=catthehacker/ubuntu:act-latest
+-P windows-latest=catthehacker/ubuntu:act-latest
+-P windows-2022=catthehacker/ubuntu:act-latest
+-P macos-latest=catthehacker/ubuntu:act-latest
+-P macos-14=catthehacker/ubuntu:act-latest
+
+# Environment variables for local testing
+--env GITHUB_ACTOR=local-test
+--env GITHUB_REPOSITORY=cpp-template/cpp-template
+--env GITHUB_REF=refs/heads/master
+--env GITHUB_SHA=1234567890abcdef
+--env GITHUB_RUN_ID=123456789
+--env GITHUB_RUN_NUMBER=1
+
+# PR-specific environment variables (for pull_request events)
+--env GITHUB_HEAD_REF=feature-branch
+--env GITHUB_BASE_REF=master
+--env GITHUB_EVENT_NAME=pull_request
+
+# Secrets (use act -s to set sensitive values)
+# --secret GITHUB_TOKEN=your_token_here
+
+# Verbose output for debugging
+--verbose
+
+# Use host network for dependencies
+--use-gitignore=false

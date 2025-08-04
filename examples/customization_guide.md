@@ -46,6 +46,7 @@ Run the customization script (if available) or follow manual steps:
 ### Step 1: Update Project Metadata
 
 **File: `CMakeLists.txt`**
+
 ```cmake
 # Change these lines
 project(your-project-name
@@ -60,6 +61,7 @@ set_target_properties(your-project-name-app PROPERTIES OUTPUT_NAME your-project-
 ```
 
 **File: `vcpkg.json`**
+
 ```json
 {
   "name": "your-project-name",
@@ -74,6 +76,7 @@ set_target_properties(your-project-name-app PROPERTIES OUTPUT_NAME your-project-
 ### Step 2: Update Namespace and Headers
 
 **File: `include/your-project-name/your-project-name.h`** (rename from cpp-template.h)
+
 ```cpp
 #pragma once
 
@@ -84,11 +87,11 @@ namespace info {
     constexpr const char* getName() {
         return "your-project-name";
     }
-    
+
     constexpr const char* getVersion() {
         return "1.0.0";
     }
-    
+
     constexpr const char* getDescription() {
         return "Your project description";
     }
@@ -111,6 +114,7 @@ find . -name "*.cpp" -o -name "*.h" | xargs sed -i 's/cpp_template/your_project_
 ### Step 4: Update CMake Target Names
 
 **File: `src/CMakeLists.txt`**
+
 ```cmake
 # Update library names
 add_library(your-project-name-impl STATIC)
@@ -129,6 +133,7 @@ target_link_libraries(your-project-name-app
 ### Adding vcpkg Dependencies
 
 1. **Update `vcpkg.json`**:
+
 ```json
 {
   "name": "your-project-name",
@@ -147,6 +152,7 @@ target_link_libraries(your-project-name-app
 ```
 
 2. **Use in CMake**:
+
 ```cmake
 # Find packages
 find_package(nlohmann_json CONFIG REQUIRED)
@@ -167,6 +173,7 @@ target_link_libraries(your-target
 ### Adding System Dependencies
 
 **File: `cmake/FindYourDependency.cmake`**
+
 ```cmake
 # Create custom find module if needed
 find_path(YOURDEP_INCLUDE_DIR yourdep.h)
@@ -201,11 +208,13 @@ add_subdirectory(library)
 ### Adding a New Internal Library
 
 1. **Create directory structure**:
+
 ```bash
 mkdir -p libs/yourlib/{include/yourlib,src}
 ```
 
 2. **Create `libs/yourlib/CMakeLists.txt`**:
+
 ```cmake
 add_library(yourlib STATIC)
 
@@ -238,6 +247,7 @@ add_library(yourlib::yourlib ALIAS yourlib)
 ```
 
 3. **Create header `libs/yourlib/include/yourlib/yourlib.h`**:
+
 ```cpp
 #pragma once
 
@@ -248,9 +258,9 @@ class YourClass {
 public:
     YourClass();
     ~YourClass();
-    
+
     void doSomething();
-    
+
 private:
     // Implementation details
 };
@@ -260,6 +270,7 @@ private:
 ```
 
 4. **Create implementation `libs/yourlib/src/yourlib.cpp`**:
+
 ```cpp
 #include "yourlib/yourlib.h"
 
@@ -278,6 +289,7 @@ void YourClass::doSomething() {
 ```
 
 5. **Update `libs/CMakeLists.txt`**:
+
 ```cmake
 add_subdirectory(core)
 add_subdirectory(yourlib)  # Add this line
@@ -286,6 +298,7 @@ add_subdirectory(yourlib)  # Add this line
 ### Adding a New Application Module
 
 1. **Create module files**:
+
 ```bash
 touch src/modules/your_module.{h,cpp}
 ```
@@ -293,6 +306,7 @@ touch src/modules/your_module.{h,cpp}
 2. **Implement the module** following the pattern of existing modules
 
 3. **Update `src/modules/CMakeLists.txt`**:
+
 ```cmake
 add_library(your-module STATIC
     your_module.cpp
@@ -318,6 +332,7 @@ target_link_libraries(your-module
 ### Changing C++ Standard
 
 **File: `CMakeLists.txt`**
+
 ```cmake
 # Change from C++17 to C++20
 set(CMAKE_CXX_STANDARD 20)
@@ -328,10 +343,11 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 ### Adding Compiler-Specific Options
 
 **File: `cmake/CompilerOptions.cmake`**
+
 ```cmake
 function(apply_compiler_options target)
     target_compile_features(${target} PUBLIC cxx_std_20)
-    
+
     # Add your custom compiler options
     if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         target_compile_options(${target} PRIVATE
@@ -355,6 +371,7 @@ endfunction()
 ### Adding Custom Build Types
 
 **File: `CMakeLists.txt`**
+
 ```cmake
 # Add custom build type
 set(CMAKE_CXX_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_RELEASE} -pg")
@@ -408,6 +425,7 @@ touch docs/deployment-guide.md
 Create project-specific CMake utilities:
 
 **File: `cmake/YourProjectHelpers.cmake`**
+
 ```cmake
 # Custom function for your project
 function(add_your_project_library name)
@@ -416,7 +434,7 @@ function(add_your_project_library name)
         "VERSION"
         "SOURCES;HEADERS;DEPENDENCIES"
     )
-    
+
     if(ARG_HEADER_ONLY)
         add_library(${name} INTERFACE)
         target_sources(${name} INTERFACE ${ARG_HEADERS})
@@ -424,10 +442,10 @@ function(add_your_project_library name)
         add_library(${name} STATIC)
         target_sources(${name} PRIVATE ${ARG_SOURCES} PUBLIC ${ARG_HEADERS})
     endif()
-    
+
     # Apply your project's standard configuration
     apply_compiler_options(${name})
-    
+
     if(ARG_DEPENDENCIES)
         target_link_libraries(${name} PUBLIC ${ARG_DEPENDENCIES})
     endif()
@@ -439,6 +457,7 @@ endfunction()
 If you need project-specific testing utilities:
 
 **File: `tests/test_helpers.h`**
+
 ```cpp
 #pragma once
 
@@ -454,11 +473,11 @@ protected:
     void SetUp() override {
         // Common setup for your tests
     }
-    
+
     void TearDown() override {
         // Common cleanup
     }
-    
+
     // Helper methods specific to your domain
     void setupTestData();
     void verifyResults();
@@ -475,6 +494,7 @@ protected:
 ### Platform-Specific Customizations
 
 **File: `cmake/PlatformSpecific.cmake`**
+
 ```cmake
 # Platform-specific configurations for your project
 if(WIN32)

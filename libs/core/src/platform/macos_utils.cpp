@@ -1,7 +1,7 @@
 /**
  * @file macos_utils.cpp
  * @brief macOS-specific utility functions implementation
- * 
+ *
  * This file contains platform-specific implementations for macOS/Darwin systems.
  * It provides macOS-specific functionality that complements the cross-platform
  * core utilities.
@@ -52,5 +52,5 @@ std::string getMacOSVersion() {
     return "macOS (version detection not implemented)";
 }
 
-} // namespace platform
-} // namespace core
+}  // namespace platform
+}  // namespace core

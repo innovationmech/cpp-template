@@ -1,0 +1,101 @@
+# =============================================================================
+# cpp-templateConfig.cmake.in - Package Configuration Template
+# Generated configuration file for find_package(cpp-template) support
+#
+# This file allows other CMake projects to easily find and use cpp-template
+# components through the standard find_package() mechanism.
+# =============================================================================
+
+@PACKAGE_INIT@
+
+# Package information
+set(CPP_TEMPLATE_VERSION "@PROJECT_VERSION@")
+set(CPP_TEMPLATE_VERSION_STRING "@PROJECT_VERSION@")
+
+# Check if the package was built with the same compiler
+set(CPP_TEMPLATE_CXX_COMPILER "@CMAKE_CXX_COMPILER_ID@")
+set(CPP_TEMPLATE_CXX_STANDARD "@CMAKE_CXX_STANDARD@")
+
+# Provide information about the build configuration
+set(CPP_TEMPLATE_BUILD_TYPE "@CMAKE_BUILD_TYPE@")
+
+# Platform information
+set(CPP_TEMPLATE_SYSTEM_NAME "@CMAKE_SYSTEM_NAME@")
+set(CPP_TEMPLATE_SYSTEM_PROCESSOR "@CMAKE_SYSTEM_PROCESSOR@")
+
+# Include the exported targets
+include("${CMAKE_CURRENT_LIST_DIR}/cpp-templateTargets.cmake")
+
+# Define available components
+set(CPP_TEMPLATE_COMPONENTS core cpp-template-impl cpp-template-app)
+
+# Validate requested components
+foreach(component ${cpp-template_FIND_COMPONENTS})
+    if(NOT component IN_LIST CPP_TEMPLATE_COMPONENTS)
+        set(cpp-template_FOUND FALSE)
+        set(cpp-template_NOT_FOUND_MESSAGE "Unknown component: ${component}")
+        return()
+    endif()
+
+    # Check if component target exists
+    if(NOT TARGET cpp-template::${component})
+        set(cpp-template_${component}_FOUND FALSE)
+        if(cpp-template_FIND_REQUIRED_${component})
+            set(cpp-template_FOUND FALSE)
+            set(cpp-template_NOT_FOUND_MESSAGE "Required component not found: ${component}")
+            return()
+        endif()
+    else()
+        set(cpp-template_${component}_FOUND TRUE)
+    endif()
+endforeach()
+
+# Compatibility check
+if(cpp-template_FIND_VERSION)
+    if(cpp-template_FIND_VERSION_EXACT)
+        if(NOT CPP_TEMPLATE_VERSION VERSION_EQUAL cpp-template_FIND_VERSION)
+            set(cpp-template_FOUND FALSE)
+            set(cpp-template_NOT_FOUND_MESSAGE
+                "Exact version ${cpp-template_FIND_VERSION} requested, but found ${CPP_TEMPLATE_VERSION}")
+            return()
+        endif()
+    else()
+        if(CPP_TEMPLATE_VERSION VERSION_LESS cpp-template_FIND_VERSION)
+            set(cpp-template_FOUND FALSE)
+            set(cpp-template_NOT_FOUND_MESSAGE
+                "Version ${cpp-template_FIND_VERSION} requested, but found ${CPP_TEMPLATE_VERSION}")
+            return()
+        endif()
+    endif()
+endif()
+
+# C++ standard compatibility check
+if(DEFINED CMAKE_CXX_STANDARD)
+    if(CMAKE_CXX_STANDARD LESS CPP_TEMPLATE_CXX_STANDARD)
+        message(WARNING
+            "cpp-template was built with C++${CPP_TEMPLATE_CXX_STANDARD}, "
+            "but your project uses C++${CMAKE_CXX_STANDARD}. "
+            "This may cause compatibility issues.")
+    endif()
+endif()
+
+# Success message
+if(NOT cpp-template_FIND_QUIETLY)
+    message(STATUS "Found cpp-template ${CPP_TEMPLATE_VERSION}")
+    if(cpp-template_FIND_COMPONENTS)
+        message(STATUS "  Components: ${cpp-template_FIND_COMPONENTS}")
+    endif()
+    message(STATUS "  Build type: ${CPP_TEMPLATE_BUILD_TYPE}")
+    message(STATUS "  C++ standard: C++${CPP_TEMPLATE_CXX_STANDARD}")
+    message(STATUS "  Compiler: ${CPP_TEMPLATE_CXX_COMPILER}")
+endif()
+
+# Set convenience variables for backward compatibility
+set(CPP_TEMPLATE_FOUND TRUE)
+set(CPP_TEMPLATE_INCLUDE_DIRS "${PACKAGE_PREFIX_DIR}/include")
+set(CPP_TEMPLATE_LIBRARIES cpp-template::core)
+
+# Mark package as found
+set(cpp-template_FOUND TRUE)
+
+check_required_components(cpp-template)

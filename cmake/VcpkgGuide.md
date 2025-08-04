@@ -17,31 +17,36 @@ vcpkg is a C++ package manager that simplifies the process of acquiring and buil
 ### Installing vcpkg
 
 1. **Clone vcpkg repository:**
+
    ```bash
    git clone https://github.com/Microsoft/vcpkg.git
    cd vcpkg
    ```
 
 2. **Bootstrap vcpkg:**
-   
+
    **On Windows:**
+
    ```cmd
    .\bootstrap-vcpkg.bat
    ```
-   
+
    **On Linux/macOS:**
+
    ```bash
    ./bootstrap-vcpkg.sh
    ```
 
 3. **Add vcpkg to your PATH (optional but recommended):**
-   
+
    **On Windows:**
+
    ```cmd
    set PATH=%PATH%;C:\path\to\vcpkg
    ```
-   
+
    **On Linux/macOS:**
+
    ```bash
    export PATH=$PATH:/path/to/vcpkg
    ```
@@ -56,7 +61,7 @@ This project uses vcpkg's manifest mode, which means dependencies are declared i
 - **Project isolation**: Each project manages its own dependencies
 - **Simplified CI/CD**: No need to pre-install packages
 
-### vcpkg.json Structure
+### vcpkg.JSON Structure
 
 The `vcpkg.json` file contains:
 
@@ -85,11 +90,13 @@ The `vcpkg.json` file contains:
 ### Dependency Types
 
 1. **Simple dependencies**: Just specify the package name
+
    ```json
    "fmt"
    ```
 
 2. **Versioned dependencies**: Specify minimum version requirements
+
    ```json
    {
      "name": "nlohmann-json",
@@ -98,6 +105,7 @@ The `vcpkg.json` file contains:
    ```
 
 3. **Platform-specific dependencies**: Only install on certain platforms
+
    ```json
    {
      "name": "cpprestsdk",
@@ -106,6 +114,7 @@ The `vcpkg.json` file contains:
    ```
 
 4. **Feature dependencies**: Optional features that can be enabled
+
    ```json
    {
      "name": "gtest",
@@ -158,6 +167,7 @@ Create a `CMakePresets.json` file:
 ```
 
 Then build with:
+
 ```bash
 cmake --preset vcpkg
 cmake --build build
@@ -168,11 +178,13 @@ cmake --build build
 ### Adding New Dependencies
 
 1. **Find the package**: Search for available packages
+
    ```bash
    vcpkg search <package-name>
    ```
 
-2. **Add to vcpkg.json**: Update the dependencies array
+2. **Add to vcpkg.JSON**: Update the dependencies array
+
    ```json
    "dependencies": [
      "existing-package",
@@ -181,6 +193,7 @@ cmake --build build
    ```
 
 3. **Reconfigure**: CMake will automatically install the new dependency
+
    ```bash
    cmake --build build --target clean
    cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE=/path/to/vcpkg/scripts/buildsystems/vcpkg.cmake
@@ -199,6 +212,7 @@ cmake -B build -S . \
 ### Version Constraints
 
 Supported version constraints:
+
 - `"version>=": "1.0.0"` - Minimum version
 - `"version": "1.0.0"` - Exact version
 - `"version-string": "master"` - String version (for git refs)
@@ -214,8 +228,8 @@ find_package(fmt CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 
-target_link_libraries(your_target 
-  PRIVATE 
+target_link_libraries(your_target
+  PRIVATE
     fmt::fmt
     spdlog::spdlog
     nlohmann_json::nlohmann_json
@@ -231,8 +245,8 @@ The project provides helper functions in `VcpkgHelpers.cmake`:
 check_vcpkg_integration()
 
 # Find package with fallback options
-find_package_with_fallback(MyPackage 
-  VCPKG_NAME my-package 
+find_package_with_fallback(MyPackage
+  VCPKG_NAME my-package
   SYSTEM_NAME mypackage
 )
 ```
@@ -250,7 +264,7 @@ find_package_with_fallback(MyPackage
    - Verify the package supports your target triplet
 
 3. **Version conflicts**
-   - Use `overrides` in vcpkg.json to force specific versions
+   - Use `overrides` in vcpkg.JSON to force specific versions
    - Check dependency tree: `vcpkg depend-info <package>`
 
 4. **Build failures**
@@ -271,14 +285,17 @@ cmake -B build -S . \
 ### Platform-Specific Notes
 
 **Windows:**
+
 - Use Visual Studio Developer Command Prompt
 - Default triplet: `x64-windows`
 
 **macOS:**
+
 - Install Xcode command line tools
 - Default triplet: `x64-osx`
 
 **Linux:**
+
 - Install build essentials
 - Default triplet: `x64-linux`
 
@@ -294,7 +311,8 @@ cmake -B build -S . \
 
 Here's a complete example of adding and using a new dependency:
 
-1. **Add to vcpkg.json:**
+1. **Add to vcpkg.JSON:**
+
    ```json
    "dependencies": [
      "boost-system"
@@ -302,15 +320,17 @@ Here's a complete example of adding and using a new dependency:
    ```
 
 2. **Use in CMakeLists.txt:**
+
    ```cmake
    find_package(Boost REQUIRED COMPONENTS system)
    target_link_libraries(your_target PRIVATE Boost::system)
    ```
 
 3. **Use in code:**
+
    ```cpp
    #include <boost/system/error_code.hpp>
-   
+
    void example() {
        boost::system::error_code ec;
        // Use boost functionality

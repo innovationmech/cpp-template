@@ -65,7 +65,7 @@ fi
 # macOS setup
 if [ "$PLATFORM" = "macos" ]; then
     print_status "Setting up macOS development environment..."
-    
+
     # Check for Xcode Command Line Tools
     if ! xcode-select -p >/dev/null 2>&1; then
         print_status "Installing Xcode Command Line Tools..."
@@ -73,12 +73,12 @@ if [ "$PLATFORM" = "macos" ]; then
         print_warning "Please complete the Xcode Command Line Tools installation and run this script again."
         exit 1
     fi
-    
+
     # Check for Homebrew
     if ! command_exists brew; then
         print_status "Installing Homebrew..."
         /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-        
+
         # Add Homebrew to PATH for current session
         if [[ $(uname -m) == "arm64" ]]; then
             eval "$(/opt/homebrew/bin/brew shellenv)"
@@ -86,40 +86,40 @@ if [ "$PLATFORM" = "macos" ]; then
             eval "$(/usr/local/bin/brew shellenv)"
         fi
     fi
-    
+
     print_status "Installing macOS dependencies via Homebrew..."
-    
+
     # Essential build tools
     brew install cmake git ninja pkg-config
-    
+
     # Common C++ libraries
     brew install boost openssl@3 zlib curl sqlite postgresql
-    
+
     # Development utilities
     brew install autoconf automake libtool
-    
+
     # Optional: vcpkg for additional package management
     if ! command_exists vcpkg; then
         print_status "Installing vcpkg..."
         brew install vcpkg
     fi
-    
+
     print_success "macOS development environment setup complete!"
 
 # Linux setup
 elif [ "$PLATFORM" = "linux" ]; then
     print_status "Setting up Linux development environment..."
-    
+
     case $DISTRO in
-        ubuntu|debian)
+        ubuntu | debian)
             print_status "Installing Ubuntu/Debian dependencies..."
-            
+
             # Update package list
             sudo apt update
-            
+
             # Essential build tools
             sudo apt install -y build-essential cmake git ninja-build pkg-config
-            
+
             # Common C++ libraries
             sudo apt install -y \
                 libboost-all-dev \
@@ -128,22 +128,22 @@ elif [ "$PLATFORM" = "linux" ]; then
                 libcurl4-openssl-dev \
                 libsqlite3-dev \
                 libpq-dev
-            
+
             # Development utilities
             sudo apt install -y autoconf automake libtool
-            
+
             print_success "Ubuntu/Debian dependencies installed!"
             ;;
-            
-        fedora|rhel|centos)
+
+        fedora | rhel | centos)
             print_status "Installing Fedora/RHEL dependencies..."
-            
+
             # Install development tools group
             sudo dnf groupinstall -y "Development Tools"
-            
+
             # Essential build tools
             sudo dnf install -y cmake git ninja-build pkgconfig
-            
+
             # Common C++ libraries
             sudo dnf install -y \
                 boost-devel \
@@ -152,22 +152,22 @@ elif [ "$PLATFORM" = "linux" ]; then
                 libcurl-devel \
                 sqlite-devel \
                 postgresql-devel
-            
+
             # Development utilities
             sudo dnf install -y autoconf automake libtool
-            
+
             print_success "Fedora/RHEL dependencies installed!"
             ;;
-            
+
         arch)
             print_status "Installing Arch Linux dependencies..."
-            
+
             # Update package database
             sudo pacman -Sy
-            
+
             # Essential build tools
             sudo pacman -S --needed base-devel cmake git ninja pkgconf
-            
+
             # Common C++ libraries
             sudo pacman -S --needed \
                 boost \
@@ -176,10 +176,10 @@ elif [ "$PLATFORM" = "linux" ]; then
                 curl \
                 sqlite \
                 postgresql-libs
-            
+
             print_success "Arch Linux dependencies installed!"
             ;;
-            
+
         *)
             print_warning "Unsupported Linux distribution: $DISTRO"
             print_status "Please install the following packages manually:"
@@ -214,14 +214,14 @@ fi
 
 if [ ${#MISSING_TOOLS[@]} -eq 0 ]; then
     print_success "All essential tools are available!"
-    
+
     # Print versions
     print_status "Tool versions:"
     echo "  CMake: $(cmake --version | head -n1)"
     echo "  Git: $(git --version)"
     echo "  Ninja: $(ninja --version)"
     echo "  pkg-config: $(pkg-config --version)"
-    
+
 else
     print_error "Missing tools: ${MISSING_TOOLS[*]}"
     print_error "Please install missing tools and run this script again."

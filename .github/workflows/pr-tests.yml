@@ -1,0 +1,439 @@
+# =============================================================================
+# Pull Request Testing Workflow
+# Comprehensive testing workflow that runs when PRs are created to master branch
+#
+# This workflow ensures code quality and prevents regressions by:
+# - Building the project on multiple platforms and configurations
+# - Running comprehensive test suites with Google Test and CTest
+# - Generating test coverage reports and uploading artifacts
+# - Providing clear feedback on test failures and build issues
+# - Supporting parallel execution for faster CI/CD cycles
+# =============================================================================
+
+name: PR Tests
+
+on:
+  pull_request:
+    branches: [ master, main ]
+    paths-ignore:
+      - '*.md'
+      - 'docs/**'
+      - '.gitignore'
+      - 'LICENSE*'
+  workflow_dispatch:  # Allow manual triggering
+
+# Concurrency control - avoid canceling running tests to prevent instability
+concurrency:
+  group: pr-tests-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  # Build configuration - reduced parallelism for stability
+  BUILD_TYPE: Release
+  CMAKE_BUILD_PARALLEL_LEVEL: 2
+  CTEST_PARALLEL_LEVEL: 1
+  CTEST_OUTPUT_ON_FAILURE: 1
+  # Test isolation
+  CTEST_TIMEOUT: 600
+  GTEST_SHUFFLE: 1
+  GTEST_RANDOM_SEED: ${{ github.run_number }}
+
+jobs:
+  # =============================================================================
+  # Build and Test Matrix
+  # =============================================================================
+  test:
+    name: Test (${{ matrix.os }}, ${{ matrix.build_type }}, ${{ matrix.compiler }})
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false  # Continue other jobs even if one fails
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        build_type: [Debug, Release]
+        include:
+          # Ubuntu with GCC
+          - os: ubuntu-latest
+            compiler: gcc
+            deps_cmd: |
+              sudo apt-get update
+              sudo apt-get install -y \
+                build-essential \
+                cmake \
+                ninja-build \
+                pkg-config \
+                libgtest-dev \
+                libgmock-dev \
+                lcov \
+                gcovr
+
+          # Windows with MSVC
+          - os: windows-latest
+            compiler: msvc
+            deps_cmd: |
+              choco install cmake ninja
+
+          # macOS with Clang
+          - os: macos-latest
+            compiler: clang
+            deps_cmd: |
+              brew install cmake ninja googletest lcov
+
+    steps:
+      # =============================================================================
+      # Environment Setup
+      # =============================================================================
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Install dependencies
+        run: ${{ matrix.deps_cmd }}
+
+      - name: Setup MSVC (Windows)
+        if: matrix.os == 'windows-latest'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      # =============================================================================
+      # Build Configuration
+      # =============================================================================
+      - name: Configure CMake
+        run: |
+          cmake -B build -S . -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DCMAKE_INSTALL_PREFIX=install -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DBUILD_TESTING=ON -DENABLE_CLANG_TIDY=OFF -DENABLE_CPPCHECK=OFF -G Ninja
+
+      - name: Build project
+        run: |
+          cmake --build build --config ${{ matrix.build_type }} --parallel ${{ env.CMAKE_BUILD_PARALLEL_LEVEL }}
+
+      # =============================================================================
+      # Test Execution
+      # =============================================================================
+      - name: Run tests (Windows)
+        if: matrix.os == 'windows-latest'
+        working-directory: build
+        shell: pwsh
+        run: |
+          Write-Host "Running tests with CTest..."
+          # Create isolated test directory for this run
+          New-Item -ItemType Directory -Force -Path "test_output_${{ matrix.os }}_${{ matrix.build_type }}"
+          $env:TMPDIR = "$(Get-Location)\test_output_${{ matrix.os }}_${{ matrix.build_type }}"
+
+          ctest --build-config ${{ matrix.build_type }} --parallel ${{ env.CTEST_PARALLEL_LEVEL }} --timeout ${{ env.CTEST_TIMEOUT }} --output-on-failure --verbose --test-dir . --output-log test_output_${{ matrix.os }}_${{ matrix.build_type }}/ctest.log
+
+      - name: Run tests (Unix)
+        if: matrix.os != 'windows-latest'
+        working-directory: build
+        run: |
+          echo "Running tests with CTest..."
+          # Create isolated test directory for this run
+          mkdir -p test_output_${{ matrix.os }}_${{ matrix.build_type }}
+          export TMPDIR="$(pwd)/test_output_${{ matrix.os }}_${{ matrix.build_type }}"
+
+          ctest --build-config ${{ matrix.build_type }} --parallel ${{ env.CTEST_PARALLEL_LEVEL }} --timeout ${{ env.CTEST_TIMEOUT }} --output-on-failure --verbose --test-dir . --output-log test_output_${{ matrix.os }}_${{ matrix.build_type }}/ctest.log
+
+      - name: Run specific test categories (Windows)
+        if: matrix.os == 'windows-latest'
+        working-directory: build
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          # Sequential execution for better isolation
+          Write-Host "Running unit tests sequentially..."
+          ctest --build-config ${{ matrix.build_type }} -L "^unit" --parallel 1 --timeout ${{ env.CTEST_TIMEOUT }}
+
+          Write-Host "Running integration tests sequentially..."
+          ctest --build-config ${{ matrix.build_type }} -L "integration" --parallel 1 --timeout ${{ env.CTEST_TIMEOUT }}
+
+      - name: Run specific test categories (Unix)
+        if: matrix.os != 'windows-latest'
+        working-directory: build
+        continue-on-error: true
+        run: |
+          # Sequential execution for better isolation
+          echo "Running unit tests sequentially..."
+          ctest --build-config ${{ matrix.build_type }} -L "^unit" --parallel 1 --timeout ${{ env.CTEST_TIMEOUT }}
+
+          echo "Running integration tests sequentially..."
+          ctest --build-config ${{ matrix.build_type }} -L "integration" --parallel 1 --timeout ${{ env.CTEST_TIMEOUT }}
+
+      # =============================================================================
+      # Test Coverage (Debug builds only)
+      # =============================================================================
+      - name: Generate coverage report (Linux/macOS Debug)
+        if: matrix.build_type == 'Debug' && (matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest')
+        working-directory: build
+        continue-on-error: true
+        run: |
+          echo "Generating coverage report..."
+
+          # Try different coverage tools
+          if command -v lcov >/dev/null 2>&1; then
+            echo "Using lcov for coverage..."
+            lcov --capture --directory . --output-file coverage.info --ignore-errors mismatch
+            lcov --remove coverage.info '/usr/*' '*/third_party/*' '*/tests/*' --output-file coverage_filtered.info
+            lcov --list coverage_filtered.info
+          elif command -v gcovr >/dev/null 2>&1; then
+            echo "Using gcovr for coverage..."
+            gcovr --root .. --exclude '.*third_party.*' --exclude '.*tests.*' --xml --output coverage.xml
+            gcovr --root .. --exclude '.*third_party.*' --exclude '.*tests.*' --html --html-details --output coverage.html
+          else
+            echo "No coverage tool available"
+          fi
+
+      # =============================================================================
+      # Test Result Processing
+      # =============================================================================
+      - name: Generate test results (Windows)
+        if: always() && matrix.os == 'windows-latest'
+        working-directory: build
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          Write-Host "Generating detailed test results..."
+
+          # Generate XML test results for GitHub integration
+          ctest --build-config ${{ matrix.build_type }} --parallel 1 --timeout ${{ env.CTEST_TIMEOUT }} --output-junit test_results.xml
+
+          # Generate human-readable test summary
+          "## Test Summary" | Out-File -FilePath test_summary.md -Encoding UTF8
+          "**Platform:** ${{ matrix.os }}" | Out-File -FilePath test_summary.md -Append -Encoding UTF8
+          "**Build Type:** ${{ matrix.build_type }}" | Out-File -FilePath test_summary.md -Append -Encoding UTF8
+          "**Compiler:** ${{ matrix.compiler }}" | Out-File -FilePath test_summary.md -Append -Encoding UTF8
+          "" | Out-File -FilePath test_summary.md -Append -Encoding UTF8
+
+          # Count test results
+          if (Test-Path "Testing/Temporary/LastTest.log") {
+            "### Test Execution Log" | Out-File -FilePath test_summary.md -Append -Encoding UTF8
+            "```" | Out-File -FilePath test_summary.md -Append -Encoding UTF8
+            Get-Content "Testing/Temporary/LastTest.log" | Select-Object -Last 50 | Out-File -FilePath test_summary.md -Append -Encoding UTF8
+            "```" | Out-File -FilePath test_summary.md -Append -Encoding UTF8
+          }
+
+      - name: Generate test results (Unix)
+        if: always() && matrix.os != 'windows-latest'
+        working-directory: build
+        continue-on-error: true
+        run: |
+          echo "Generating detailed test results..."
+
+          # Generate XML test results for GitHub integration
+          ctest --build-config ${{ matrix.build_type }} --parallel 1 --timeout ${{ env.CTEST_TIMEOUT }} --output-junit test_results.xml || true
+
+          # Generate human-readable test summary
+          echo "## Test Summary" > test_summary.md
+          echo "**Platform:** ${{ matrix.os }}" >> test_summary.md
+          echo "**Build Type:** ${{ matrix.build_type }}" >> test_summary.md
+          echo "**Compiler:** ${{ matrix.compiler }}" >> test_summary.md
+          echo "" >> test_summary.md
+
+          # Count test results
+          if [ -f "Testing/Temporary/LastTest.log" ]; then
+            echo "### Test Execution Log" >> test_summary.md
+            echo '```' >> test_summary.md
+            tail -50 Testing/Temporary/LastTest.log >> test_summary.md
+            echo '```' >> test_summary.md
+          fi
+
+      # =============================================================================
+      # Artifact Upload
+      # =============================================================================
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.os }}-${{ matrix.build_type }}-${{ matrix.compiler }}
+          path: |
+            build/test_results.xml
+            build/test_summary.md
+            build/Testing/Temporary/LastTest.log
+            build/coverage*
+          retention-days: 7
+
+      - name: Upload build artifacts
+        if: matrix.build_type == 'Release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts-${{ matrix.os }}-${{ matrix.compiler }}
+          path: |
+            build/bin/
+            build/lib/
+          retention-days: 3
+
+      # =============================================================================
+      # Test Installation
+      # =============================================================================
+      - name: Test installation (Windows)
+        if: matrix.build_type == 'Release' && matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          Write-Host "Testing installation..."
+          cmake --install build --config ${{ matrix.build_type }}
+
+          # Verify installed files
+          Write-Host "Installed files:"
+          Get-ChildItem -Path install -Recurse -File | Sort-Object FullName | Select-Object -ExpandProperty FullName
+
+      - name: Test installation (Unix)
+        if: matrix.build_type == 'Release' && matrix.os != 'windows-latest'
+        run: |
+          echo "Testing installation..."
+          cmake --install build --config ${{ matrix.build_type }}
+
+          # Verify installed files
+          echo "Installed files:"
+          find install -type f | sort
+
+  # =============================================================================
+  # Integration Test Job
+  # =============================================================================
+  integration-test:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: test
+    if: always() && !cancelled()
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            cmake \
+            ninja-build \
+            pkg-config \
+            valgrind \
+            cppcheck
+
+      - name: Configure for integration testing
+        run: |
+          cmake -B build -S . \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DBUILD_TESTING=ON \
+            -DENABLE_VALGRIND=ON \
+            -G Ninja
+
+      - name: Build for integration testing
+        run: |
+          cmake --build build --parallel ${{ env.CMAKE_BUILD_PARALLEL_LEVEL }}
+
+      - name: Run integration tests with Valgrind
+        working-directory: build
+        continue-on-error: true
+        run: |
+          echo "Running integration tests with memory checking..."
+
+          # Run tests with Valgrind if available
+          if command -v valgrind >/dev/null 2>&1; then
+            ctest -L "integration" \
+                  --parallel 2 \
+                  --overwrite MemoryCheckCommand=$(which valgrind) \
+                  --overwrite MemoryCheckCommandOptions="--leak-check=full --error-exitcode=1" \
+                  --verbose
+          else
+            ctest -L "integration" --parallel ${{ env.CTEST_PARALLEL_LEVEL }} --verbose
+          fi
+
+      - name: Static Analysis
+        continue-on-error: true
+        run: |
+          echo "Running static analysis..."
+
+          if command -v cppcheck >/dev/null 2>&1; then
+            cppcheck --enable=all --xml --xml-version=2 \
+                     --suppress=missingIncludeSystem \
+                     --suppress=unusedFunction \
+                     --exclude=third_party \
+                     --exclude=build \
+                     src/ libs/ 2> cppcheck_results.xml || true
+          fi
+
+      - name: Upload integration test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-results
+          path: |
+            build/Testing/
+            cppcheck_results.xml
+          retention-days: 7
+
+  # =============================================================================
+  # Summary Job
+  # =============================================================================
+  summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: [test, integration-test]
+    if: always()
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Generate overall summary
+        run: |
+          echo "# PR Test Results Summary" > summary.md
+          echo "" >> summary.md
+          echo "## Job Status" >> summary.md
+          echo "- **Unit/System Tests**: ${{ needs.test.result }}" >> summary.md
+          echo "- **Integration Tests**: ${{ needs.integration-test.result }}" >> summary.md
+          echo "" >> summary.md
+
+          echo "## Artifacts Generated" >> summary.md
+          find artifacts -name "*.xml" -o -name "*.html" -o -name "*.log" | sort >> summary.md
+
+          # Check for any failed tests in logs
+          echo "" >> summary.md
+          echo "## Test Analysis" >> summary.md
+
+          failed_tests=0
+          for log in artifacts/*/Testing/Temporary/LastTest.log; do
+            if [ -f "$log" ]; then
+              if grep -q "FAILED" "$log"; then
+                failed_tests=$((failed_tests + 1))
+                echo "❌ Found failed tests in $(dirname "$log")" >> summary.md
+              fi
+            fi
+          done
+
+          if [ $failed_tests -eq 0 ]; then
+            echo "✅ All tests passed successfully!" >> summary.md
+          else
+            echo "❌ $failed_tests test suite(s) had failures" >> summary.md
+          fi
+
+          cat summary.md
+
+      - name: Upload summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-summary
+          path: summary.md
+          retention-days: 30
+
+      - name: Comment PR with results
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            if (fs.existsSync('summary.md')) {
+              const summary = fs.readFileSync('summary.md', 'utf8');
+
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: `## 🧪 Test Results\n\n${summary}\n\n_Generated by PR Tests workflow_`
+              });
+            }
