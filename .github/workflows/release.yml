@@ -1,0 +1,433 @@
+# =============================================================================
+# Release Workflow - Automatic Tag, Build, Package and Release
+# This workflow automatically creates tags, builds packages, and creates GitHub
+# releases when changes are pushed to the master branch.
+#
+# Version Management:
+# - Commit messages with [major] or BREAKING CHANGE: → major version (1.0.0 → 2.0.0)
+# - Commit messages with feat: or [minor] → minor version (1.0.0 → 1.1.0)
+# - Other commits → patch version (1.0.0 → 1.0.1)
+#
+# Supported Platforms: Ubuntu, Windows, macOS
+# Package Formats: TGZ, ZIP, DEB, RPM, DMG, NSIS (platform dependent)
+# =============================================================================
+
+name: Release
+
+on:
+  push:
+    branches: [ master, main ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.github/**'
+      - '!.github/workflows/release.yml'
+
+# Concurrency control - avoid canceling running builds to prevent instability
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+# Set permissions for GITHUB_TOKEN
+permissions:
+  contents: write
+  packages: write
+  pull-requests: read
+
+jobs:
+  # =============================================================================
+  # Version Detection and Tagging
+  # =============================================================================
+  version:
+    name: Determine Version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+      should_release: ${{ steps.version.outputs.should_release }}
+      changelog: ${{ steps.version.outputs.changelog }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Determine version bump
+        id: version
+        run: |
+          # Get current version from CMakeLists.txt
+          current_version=$(grep -E "^\s*VERSION\s+[0-9]+\.[0-9]+\.[0-9]+" CMakeLists.txt | head -1 | sed -E 's/.*VERSION\s+([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
+
+          if [ -z "$current_version" ]; then
+            echo "Could not find version in CMakeLists.txt"
+            current_version="1.0.0"
+          fi
+
+          echo "Current version: $current_version"
+
+          # Check if this version is already tagged
+          if git tag -l "v$current_version" | grep -q "v$current_version"; then
+            echo "Version v$current_version already tagged"
+
+            # Get commits since last tag
+            last_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+            if [ -n "$last_tag" ]; then
+              commits_since_tag=$(git log $last_tag..HEAD --oneline)
+            else
+              commits_since_tag=$(git log --oneline)
+            fi
+
+            if [ -z "$commits_since_tag" ]; then
+              echo "No new commits since last tag"
+              echo "should_release=false" >> $GITHUB_OUTPUT
+              echo "version=$current_version" >> $GITHUB_OUTPUT
+              echo "tag=v$current_version" >> $GITHUB_OUTPUT
+              exit 0
+            fi
+
+            # Parse current version
+            IFS='.' read -r major minor patch <<< "$current_version"
+
+            # Determine version bump based on commit messages
+            commit_messages=$(git log $last_tag..HEAD --pretty=format:"%s")
+
+            if echo "$commit_messages" | grep -qiE "\[major\]|BREAKING CHANGE:|^[a-zA-Z0-9_-]+!:"; then
+              new_version="$((major + 1)).0.0"
+              echo "🚀 Major version bump detected"
+            elif echo "$commit_messages" | grep -qiE "feat:|^feat\(.*\):|^\[minor\]"; then
+              new_version="$major.$((minor + 1)).0"
+              echo "✨ Minor version bump detected"
+            else
+              new_version="$major.$minor.$((patch + 1))"
+              echo "🐛 Patch version bump detected"
+            fi
+
+            echo "New version: $new_version"
+
+            # Update CMakeLists.txt with new version
+            sed -i.bak -E "s/(VERSION\s+)[0-9]+\.[0-9]+\.[0-9]+/\1$new_version/" CMakeLists.txt
+
+            # Check if file was actually changed
+            if ! diff CMakeLists.txt CMakeLists.txt.bak > /dev/null 2>&1; then
+              echo "Version updated in CMakeLists.txt"
+              # Commit the version update
+              git config --local user.email "action@github.com"
+              git config --local user.name "GitHub Action"
+              git add CMakeLists.txt
+              git commit -m "chore: bump version to $new_version [skip ci]"
+              git push
+            else
+              echo "Failed to update version in CMakeLists.txt"
+            fi
+
+            rm -f CMakeLists.txt.bak
+
+          else
+            new_version="$current_version"
+            echo "Using current version from CMakeLists.txt: $new_version"
+          fi
+
+          # Generate changelog since last tag
+          last_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -n "$last_tag" ]; then
+            changelog=$(git log $last_tag..HEAD --pretty=format:"- %s (%h)" --no-merges)
+          else
+            changelog=$(git log --pretty=format:"- %s (%h)" --no-merges -10)
+          fi
+
+          # Set outputs
+          echo "should_release=true" >> $GITHUB_OUTPUT
+          echo "version=$new_version" >> $GITHUB_OUTPUT
+          echo "tag=v$new_version" >> $GITHUB_OUTPUT
+
+          # Save changelog to file for multiline output
+          cat << 'EOF' > changelog.txt
+          $changelog
+          EOF
+
+          echo "changelog<<CHANGELOG_EOF" >> $GITHUB_OUTPUT
+          cat changelog.txt >> $GITHUB_OUTPUT
+          echo "CHANGELOG_EOF" >> $GITHUB_OUTPUT
+
+          echo "Version: $new_version"
+          echo "Tag: v$new_version"
+          echo "Should release: true"
+
+  # =============================================================================
+  # Multi-Platform Build and Package
+  # =============================================================================
+  build:
+    name: Build and Package
+    needs: version
+    if: needs.version.outputs.should_release == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Ubuntu - Latest LTS
+          - os: ubuntu-24.04
+            name: linux
+            cmake_preset: default
+            package_formats: "TGZ;DEB"
+            artifact_pattern: "build/cpp-template-*-linux-x64.*"
+
+          # Windows - Latest
+          - os: windows-2022
+            name: windows
+            cmake_preset: default
+            package_formats: "ZIP;NSIS"
+            artifact_pattern: "build/cpp-template-*-windows-x64.*"
+
+          # macOS - Latest
+          - os: macos-14
+            name: macos
+            cmake_preset: default
+            package_formats: "TGZ;DragNDrop"
+            artifact_pattern: "build/cpp-template-*-macos-*.*"
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Cache LLVM and Clang (Linux)
+        if: runner.os == 'Linux'
+        id: cache-llvm
+        uses: actions/cache@v4
+        with:
+          path: |
+            C:/Program Files/LLVM
+            ./llvm
+          key: llvm-17-${{ runner.os }}
+
+      - name: Install dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            cmake \
+            ninja-build \
+            pkg-config \
+            libgtest-dev \
+            libgmock-dev
+
+      - name: Install LLVM and Clang (Linux)
+        if: runner.os == 'Linux'
+        uses: KyleMayes/install-llvm-action@v2
+        with:
+          version: "17"
+          cached: ${{ steps.cache-llvm.outputs.cache-hit }}
+
+      - name: Install system dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            cmake \
+            ninja-build \
+            pkg-config \
+            libtool \
+            autoconf \
+            dpkg-dev \
+            rpm
+
+      - name: Install system dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install cmake ninja pkg-config
+
+      - name: Install system dependencies (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System'
+          choco install ninja
+
+      - name: Set up MSVC (Windows)
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Configure CMake
+        run: |
+          cmake -B build -S . `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DCMAKE_INSTALL_PREFIX=install `
+            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON `
+            -DENABLE_CLANG_TIDY=OFF `
+            -DENABLE_CPPCHECK=OFF `
+            -G Ninja
+
+      - name: Build project
+        run: cmake --build build --config Release --parallel
+
+      - name: Run tests
+        run: cmake --build build --target test --config Release
+        continue-on-error: true
+
+      - name: Install project
+        run: cmake --install build --config Release
+
+      - name: Create packages
+        run: |
+          cd build
+          cpack -G "${{ matrix.package_formats }}" -C Release -V
+        env:
+          CPACK_GENERATOR: ${{ matrix.package_formats }}
+
+      - name: List generated packages
+        shell: bash
+        run: |
+          echo "📦 Generated packages:"
+          find build -name "cpp-template-*" -type f | sort
+
+      - name: Upload packages as artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: packages-${{ matrix.name }}
+          path: |
+            build/cpp-template-*
+            !build/**/*.dir/
+            !build/**/CMakeFiles/
+          retention-days: 30
+
+  # =============================================================================
+  # Create GitHub Release
+  # =============================================================================
+  release:
+    name: Create Release
+    needs: [version, build]
+    if: needs.version.outputs.should_release == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download all package artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: packages/
+
+      - name: Display downloaded artifacts
+        run: |
+          echo "📁 Downloaded artifacts:"
+          find packages/ -type f | sort
+
+      - name: Create git tag
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git tag -a "${{ needs.version.outputs.tag }}" -m "Release ${{ needs.version.outputs.tag }}"
+          git push origin "${{ needs.version.outputs.tag }}"
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ needs.version.outputs.tag }}
+          release_name: "Release ${{ needs.version.outputs.tag }}"
+          body: |
+            ## 🚀 Release ${{ needs.version.outputs.tag }}
+
+            Automatically generated release from master branch.
+
+            ### 📋 Changes
+            ${{ needs.version.outputs.changelog }}
+
+            ### 📦 Package Downloads
+            - **Linux**: TGZ archive and DEB package
+            - **Windows**: ZIP archive and NSIS installer
+            - **macOS**: TGZ archive and DMG disk image
+
+            ### 🔧 Installation
+
+            **Linux (Ubuntu/Debian):**
+            ```bash
+            # Using DEB package
+            sudo dpkg -i cpp-template-*-linux-x64.deb
+
+            # Using TGZ archive
+            tar -xzf cpp-template-*-linux-x64.tar.gz
+            ```
+
+            **Windows:**
+            ```cmd
+            # Using installer
+            cpp-template-*-windows-x64.exe
+
+            # Using ZIP archive
+            unzip cpp-template-*-windows-x64.zip
+            ```
+
+            **macOS:**
+            ```bash
+            # Using DMG
+            open cpp-template-*-macos-*.dmg
+
+            # Using TGZ archive
+            tar -xzf cpp-template-*-macos-*.tar.gz
+            ```
+
+            ---
+            🤖 Generated with [Claude Code](https://claude.ai/code)
+          draft: false
+          prerelease: false
+
+      - name: Upload Release Assets
+        run: |
+          # Upload all package files as release assets
+          for file in packages/**/*; do
+            if [ -f "$file" ]; then
+              filename=$(basename "$file")
+              echo "📤 Uploading: $filename"
+
+              # Determine content type based on file extension
+              case "${filename##*.}" in
+                "deb") content_type="application/vnd.debian.binary-package" ;;
+                "rpm") content_type="application/x-rpm" ;;
+                "dmg") content_type="application/x-apple-diskimage" ;;
+                "exe") content_type="application/vnd.microsoft.portable-executable" ;;
+                "msi") content_type="application/x-msi" ;;
+                "zip") content_type="application/zip" ;;
+                "tar.gz"|"tgz") content_type="application/gzip" ;;
+                *) content_type="application/octet-stream" ;;
+              esac
+
+              curl -L \
+                -X POST \
+                -H "Accept: application/vnd.github+json" \
+                -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+                -H "X-GitHub-Api-Version: 2022-11-28" \
+                -H "Content-Type: $content_type" \
+                "${{ steps.create_release.outputs.upload_url }}?name=$filename" \
+                --data-binary "@$file" || echo "Failed to upload $filename"
+            fi
+          done
+
+      - name: Release Summary
+        run: |
+          echo "## 🎉 Release Created Successfully!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ needs.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Tag:** ${{ needs.version.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Release URL:** ${{ steps.create_release.outputs.html_url }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 Generated Packages" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          for file in packages/**/*; do
+            if [ -f "$file" ]; then
+              filename=$(basename "$file")
+              filesize=$(ls -lh "$file" | awk '{print $5}')
+              echo "- **$filename** ($filesize)" >> $GITHUB_STEP_SUMMARY
+            fi
+          done

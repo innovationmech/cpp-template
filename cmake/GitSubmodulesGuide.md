@@ -14,12 +14,14 @@ Git submodules allow you to include external Git repositories as subdirectories 
 ## Advantages and Disadvantages
 
 ### Advantages
+
 - **Source control integration**: Dependencies are versioned with your project
 - **Reproducible builds**: Exact commit hashes ensure consistency
 - **Offline development**: All source code is available locally
 - **Custom modifications**: Easy to fork and modify dependencies
 
 ### Disadvantages
+
 - **Repository size**: Increases repository size and clone time
 - **Complexity**: Requires understanding of submodule workflows
 - **Update overhead**: Manual process to update dependencies
@@ -149,7 +151,7 @@ check_submodule_available("json" JSON_AVAILABLE)
 if(JSON_AVAILABLE)
     # Configure nlohmann/json
     add_library(submodule_json INTERFACE)
-    target_include_directories(submodule_json INTERFACE 
+    target_include_directories(submodule_json INTERFACE
         "${CMAKE_CURRENT_SOURCE_DIR}/json/single_include"
     )
     add_library(third_party::submodule_json ALIAS submodule_json)
@@ -162,8 +164,8 @@ In your CMakeLists.txt files:
 
 ```cmake
 # Link against submodule dependencies
-target_link_libraries(your_target 
-    PRIVATE 
+target_link_libraries(your_target
+    PRIVATE
         third_party::submodule_json
         third_party::catch2
         third_party::cxxopts
@@ -184,25 +186,29 @@ cmake --build build --target update-submodules
 
 ## Available Submodules
 
-### nlohmann/json
+### nlohmann/JSON
+
 - **Purpose**: JSON parsing and serialization
 - **Type**: Header-only library
 - **Usage**: `#include <nlohmann/json.hpp>`
 - **Target**: `third_party::submodule_json`
 
 ### Catch2
+
 - **Purpose**: Unit testing framework
 - **Type**: Header-only or compiled library
 - **Usage**: `#include <catch2/catch.hpp>`
 - **Target**: `third_party::catch2`
 
 ### cxxopts
+
 - **Purpose**: Command line argument parsing
 - **Type**: Header-only library
 - **Usage**: `#include <cxxopts.hpp>`
 - **Target**: `third_party::cxxopts`
 
 ### spdlog (Header-only)
+
 - **Purpose**: Fast logging library
 - **Type**: Header-only mode
 - **Usage**: `#include <spdlog/spdlog.h>`
@@ -236,12 +242,14 @@ cmake --build build --target update-submodules
 ### Common Issues
 
 1. **Submodule not initialized**
+
    ```bash
    # Error: submodule directory is empty
    git submodule update --init --recursive
    ```
 
 2. **Submodule commit mismatch**
+
    ```bash
    # Warning: submodule is not at expected commit
    cd third_party/submodules/<name>
@@ -252,6 +260,7 @@ cmake --build build --target update-submodules
    ```
 
 3. **Merge conflicts in submodules**
+
    ```bash
    # Resolve conflicts in submodule first
    cd third_party/submodules/<name>
@@ -290,6 +299,7 @@ git submodule foreach 'echo "Submodule $name at $(git rev-parse HEAD)"'
 Here's a complete example of adding and using a new submodule:
 
 1. **Add the submodule:**
+
    ```bash
    git submodule add https://github.com/fmtlib/fmt.git third_party/submodules/fmt
    git add .gitmodules third_party/submodules/fmt
@@ -297,6 +307,7 @@ Here's a complete example of adding and using a new submodule:
    ```
 
 2. **Configure in CMake:**
+
    ```cmake
    # In third_party/submodules/CMakeLists.txt
    check_submodule_available("fmt" FMT_AVAILABLE)
@@ -307,9 +318,10 @@ Here's a complete example of adding and using a new submodule:
    ```
 
 3. **Use in code:**
+
    ```cpp
    #include <fmt/format.h>
-   
+
    int main() {
        std::string message = fmt::format("Hello, {}!", "World");
        std::cout << message << std::endl;
@@ -318,6 +330,7 @@ Here's a complete example of adding and using a new submodule:
    ```
 
 4. **Link in CMakeLists.txt:**
+
    ```cmake
    target_link_libraries(your_target PRIVATE third_party::fmt)
    ```

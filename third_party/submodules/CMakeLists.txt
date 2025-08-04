@@ -72,10 +72,13 @@ if(CATCH2_AVAILABLE)
         add_subdirectory(catch2)
         
         # Create alias for consistent naming
+        # Note: Catch2::Catch2 might be an alias itself, so we check for the actual target
         if(TARGET Catch2::Catch2)
-            add_library(third_party::catch2 ALIAS Catch2::Catch2)
+            # Use Catch2::Catch2 directly without creating an alias to an alias
+            set(CATCH2_TARGET "Catch2::Catch2" CACHE INTERNAL "Catch2 target name")
         elseif(TARGET Catch2)
             add_library(third_party::catch2 ALIAS Catch2)
+            set(CATCH2_TARGET "third_party::catch2" CACHE INTERNAL "Catch2 target name")
         endif()
         
         message(STATUS "Using Catch2 with CMake integration")

@@ -15,6 +15,7 @@ System package managers provide pre-built libraries and tools that are installed
 ## Advantages and Disadvantages
 
 ### Advantages
+
 - **Fast installation**: Pre-built binaries install quickly
 - **System integration**: Proper integration with system services
 - **Automatic updates**: Package manager handles updates and security patches
@@ -23,6 +24,7 @@ System package managers provide pre-built libraries and tools that are installed
 - **Maintenance**: Package maintainers handle build configuration
 
 ### Disadvantages
+
 - **Version constraints**: Limited to available package versions
 - **System dependency**: Requires specific package manager on target system
 - **Potential conflicts**: Different projects may need different versions
@@ -37,11 +39,13 @@ System package managers provide pre-built libraries and tools that are installed
 Homebrew is the recommended package manager for macOS development.
 
 **Installation:**
+
 ```bash
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 ```
 
 **Common Development Dependencies:**
+
 ```bash
 # Essential build tools
 brew install cmake
@@ -74,6 +78,7 @@ brew install vcpkg
 ### Linux - APT (Ubuntu/Debian)
 
 **Common Development Dependencies:**
+
 ```bash
 # Essential build tools
 sudo apt update
@@ -98,6 +103,7 @@ sudo apt install libtool-bin
 ### Linux - YUM/DNF (RHEL/Fedora/CentOS)
 
 **Common Development Dependencies:**
+
 ```bash
 # Essential build tools
 sudo dnf groupinstall "Development Tools"
@@ -122,11 +128,13 @@ sudo dnf install libtool
 ### Windows - Chocolatey
 
 **Installation:**
+
 ```powershell
 Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
 ```
 
 **Common Development Dependencies:**
+
 ```powershell
 # Essential build tools
 choco install cmake
@@ -157,12 +165,12 @@ find_package(SQLite3 REQUIRED)
 find_package(PostgreSQL REQUIRED)
 
 # Link against found packages
-target_link_libraries(your_target 
-    PRIVATE 
-        Boost::system 
-        Boost::filesystem 
+target_link_libraries(your_target
+    PRIVATE
+        Boost::system
+        Boost::filesystem
         Boost::thread
-        OpenSSL::SSL 
+        OpenSSL::SSL
         OpenSSL::Crypto
         ZLIB::ZLIB
         CURL::libcurl
@@ -225,16 +233,16 @@ if(APPLE)
         # Intel Homebrew
         list(APPEND CMAKE_PREFIX_PATH "/usr/local")
     endif()
-    
+
     # macOS-specific packages
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(EXAMPLE libexample)
-    
+
 elseif(UNIX AND NOT APPLE)
     # Linux-specific configuration
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
-    
+
 elseif(WIN32)
     # Windows-specific configuration
     find_package(unofficial-sqlite3 CONFIG REQUIRED)
@@ -248,6 +256,7 @@ endif()
 Create a setup script for easy environment configuration:
 
 **setup-dev-env.sh (macOS/Linux):**
+
 ```bash
 #!/bin/bash
 # Development environment setup script
@@ -263,10 +272,10 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
         echo "Installing Homebrew..."
         /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     fi
-    
+
     echo "Installing macOS dependencies..."
     brew install cmake git ninja boost openssl@3 zlib curl sqlite postgresql
-    
+
 elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
     # Linux
     if command -v apt &> /dev/null; then
@@ -297,6 +306,7 @@ echo "  cmake --build build"
 ```
 
 **setup-dev-env.ps1 (Windows):**
+
 ```powershell
 # Development environment setup script for Windows
 
@@ -334,7 +344,7 @@ if(APPLE)
         # Intel Mac
         set(HOMEBREW_PREFIX "/usr/local")
     endif()
-    
+
     if(EXISTS "${HOMEBREW_PREFIX}")
         list(APPEND CMAKE_PREFIX_PATH "${HOMEBREW_PREFIX}")
         set(ENV{PKG_CONFIG_PATH} "${HOMEBREW_PREFIX}/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}")
@@ -375,23 +385,26 @@ endif()
 ### Usage Examples
 
 **Boost Libraries:**
+
 ```cmake
 find_package(Boost REQUIRED COMPONENTS system filesystem thread regex)
-target_link_libraries(your_target PRIVATE 
-    Boost::system 
-    Boost::filesystem 
-    Boost::thread 
+target_link_libraries(your_target PRIVATE
+    Boost::system
+    Boost::filesystem
+    Boost::thread
     Boost::regex
 )
 ```
 
 **OpenSSL:**
+
 ```cmake
 find_package(OpenSSL REQUIRED)
 target_link_libraries(your_target PRIVATE OpenSSL::SSL OpenSSL::Crypto)
 ```
 
 **SQLite:**
+
 ```cmake
 find_package(SQLite3 REQUIRED)
 target_link_libraries(your_target PRIVATE SQLite::SQLite3)
@@ -402,6 +415,7 @@ target_link_libraries(your_target PRIVATE SQLite::SQLite3)
 ### Common Issues
 
 1. **Package not found**
+
    ```bash
    # Check if package is installed
    brew list | grep package_name  # macOS
@@ -410,6 +424,7 @@ target_link_libraries(your_target PRIVATE SQLite::SQLite3)
    ```
 
 2. **Wrong package version**
+
    ```bash
    # Check installed version
    brew info package_name         # macOS
@@ -418,6 +433,7 @@ target_link_libraries(your_target PRIVATE SQLite::SQLite3)
    ```
 
 3. **CMake can't find package**
+
    ```cmake
    # Add debug information
    set(CMAKE_FIND_DEBUG_MODE TRUE)
@@ -426,13 +442,14 @@ target_link_libraries(your_target PRIVATE SQLite::SQLite3)
    ```
 
 4. **pkg-config issues**
+
    ```bash
    # Check pkg-config path
    echo $PKG_CONFIG_PATH
-   
+
    # List available packages
    pkg-config --list-all
-   
+
    # Check specific package
    pkg-config --exists package_name && echo "Found" || echo "Not found"
    ```
@@ -440,16 +457,19 @@ target_link_libraries(your_target PRIVATE SQLite::SQLite3)
 ### Platform-Specific Issues
 
 **macOS:**
+
 - **Xcode Command Line Tools**: `xcode-select --install`
 - **Homebrew permissions**: `sudo chown -R $(whoami) /opt/homebrew`
 - **Apple Silicon vs Intel**: Check architecture with `uname -m`
 
 **Linux:**
+
 - **Missing development packages**: Install `-dev` or `-devel` variants
 - **Package manager updates**: Run `sudo apt update` or `sudo dnf update`
 - **Permission issues**: Use `sudo` for system package installation
 
 **Windows:**
+
 - **Visual Studio Build Tools**: Required for most C++ packages
 - **PowerShell execution policy**: `Set-ExecutionPolicy RemoteSigned`
 - **Path issues**: Restart terminal after package installation
@@ -482,6 +502,7 @@ target_link_libraries(your_target PRIVATE SQLite::SQLite3)
 Here's a complete example showing how to integrate a system package:
 
 **CMakeLists.txt:**
+
 ```cmake
 # Find Boost with fallback options
 find_package(Boost 1.70 QUIET COMPONENTS system filesystem)
@@ -489,8 +510,8 @@ find_package(Boost 1.70 QUIET COMPONENTS system filesystem)
 if(Boost_FOUND)
     message(STATUS "Found Boost ${Boost_VERSION} via system packages")
     add_library(third_party::boost INTERFACE IMPORTED)
-    target_link_libraries(third_party::boost INTERFACE 
-        Boost::system 
+    target_link_libraries(third_party::boost INTERFACE
+        Boost::system
         Boost::filesystem
     )
 else()
@@ -504,13 +525,14 @@ else()
     elseif(WIN32)
         message(STATUS "  choco install boost-msvc-14.3")
     endif()
-    
+
     # Try alternative methods (vcpkg, manual, etc.)
     # ... fallback logic here ...
 endif()
 ```
 
 **Usage:**
+
 ```cpp
 #include <boost/system/error_code.hpp>
 #include <boost/filesystem.hpp>
@@ -518,11 +540,11 @@ endif()
 int main() {
     boost::system::error_code ec;
     boost::filesystem::path p("/tmp");
-    
+
     if (boost::filesystem::exists(p, ec)) {
         std::cout << "Path exists" << std::endl;
     }
-    
+
     return 0;
 }
 ```

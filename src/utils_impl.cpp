@@ -1,6 +1,6 @@
-#include "cpp-template/utils.h"
-#include "core/utils.h" // Internal core library utils
 #include <regex>
+#include "core/utils.h"  // Internal core library utils
+#include "cpp-template/utils.h"
 
 namespace cpp_template {
 namespace string_utils {
@@ -21,7 +21,7 @@ std::string join(const std::vector<std::string>& strings, const std::string& del
     return core::utils::string::join(strings, delimiter);
 }
 
-} // namespace string_utils
+}  // namespace string_utils
 
 namespace validation {
 
@@ -35,11 +35,9 @@ bool isAlphanumeric(const std::string& input) {
 
 bool isValidEmail(const std::string& email) {
     // Simple email validation using regex
-    const std::regex email_pattern(
-        R"(^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$)"
-    );
+    const std::regex email_pattern(R"(^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$)");
     return std::regex_match(email, email_pattern);
 }
 
-} // namespace validation
-} // namespace cpp_template
+}  // namespace validation
+}  // namespace cpp_template

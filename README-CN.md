@@ -87,6 +87,7 @@ cpp-template/
 ### 平台特定要求
 
 #### macOS
+
 ```bash
 # 安装 Xcode 命令行工具
 xcode-select --install
@@ -99,6 +100,7 @@ brew install cmake git ninja
 ```
 
 #### Ubuntu/Debian
+
 ```bash
 # 更新软件包列表
 sudo apt update
@@ -108,6 +110,7 @@ sudo apt install build-essential cmake git ninja-build pkg-config
 ```
 
 #### Fedora/RHEL/CentOS
+
 ```bash
 # 安装开发工具
 sudo dnf groupinstall "Development Tools"
@@ -115,6 +118,7 @@ sudo dnf install cmake git ninja-build pkgconfig
 ```
 
 #### Windows
+
 ```powershell
 # 安装 Chocolatey（以管理员身份运行）
 Set-ExecutionPolicy Bypass -Scope Process -Force
@@ -227,7 +231,7 @@ cmake --build build
 }
 ```
 
-有关 vcpkg 的详细使用方法，请参见 [cmake/VcpkgGuide.md](cmake/VcpkgGuide.md)。
+有关 vcpkg 的详细使用方法，请参见 [CMake/VcpkgGuide.md](cmake/VcpkgGuide.md)。
 
 ### 2. 系统包管理器
 
@@ -255,7 +259,7 @@ cmake -B build -S .
 cmake --build build
 ```
 
-有关系统包的详细使用方法，请参见 [cmake/SystemPackagesGuide.md](cmake/SystemPackagesGuide.md)。
+有关系统包的详细使用方法，请参见 [CMake/SystemPackagesGuide.md](cmake/SystemPackagesGuide.md)。
 
 ### 3. Git 子模块
 
@@ -273,7 +277,7 @@ cmake -B build -S .
 cmake --build build
 ```
 
-有关子模块的详细使用方法，请参见 [cmake/GitSubmodulesGuide.md](cmake/GitSubmodulesGuide.md)。
+有关子模块的详细使用方法，请参见 [CMake/GitSubmodulesGuide.md](cmake/GitSubmodulesGuide.md)。
 
 ### 4. 手动依赖项
 
@@ -289,7 +293,7 @@ cmake -B build -S .
 cmake --build build
 ```
 
-有关手动依赖项管理的详细信息，请参见 [cmake/ManualDependenciesGuide.md](cmake/ManualDependenciesGuide.md)。
+有关手动依赖项管理的详细信息，请参见 [CMake/ManualDependenciesGuide.md](cmake/ManualDependenciesGuide.md)。
 
 ## 构建项目
 
@@ -367,6 +371,7 @@ ctest --parallel 4
 3. 遵循 Google Test 约定
 
 示例:
+
 ```cpp
 #include <gtest/gtest.h>
 #include "your_component.h"
@@ -445,6 +450,7 @@ C:\vcpkg\bootstrap-vcpkg.bat
 #### Visual Studio Code
 
 安装推荐的扩展：
+
 - C/C++ Extension Pack
 - CMake Tools
 - GitLens

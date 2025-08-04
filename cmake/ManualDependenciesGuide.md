@@ -15,6 +15,7 @@ Manual dependency management involves directly including external libraries in y
 ## Advantages and Disadvantages
 
 ### Advantages
+
 - **Full control**: Complete control over library configuration and build process
 - **No external dependencies**: No need for package managers or internet access
 - **Custom modifications**: Easy to modify library code for specific needs
@@ -22,6 +23,7 @@ Manual dependency management involves directly including external libraries in y
 - **Simple distribution**: Everything needed is in the repository
 
 ### Disadvantages
+
 - **Repository size**: Increases repository size significantly
 - **Update overhead**: Manual process to update dependencies
 - **Maintenance burden**: Responsibility for security updates and bug fixes
@@ -60,6 +62,7 @@ third_party/manual/
 For libraries that consist only of header files:
 
 **Structure:**
+
 ```
 library_name/
 ├── include/
@@ -70,14 +73,16 @@ library_name/
 ```
 
 **CMake Integration:**
+
 ```cmake
-create_header_only_target(manual_library_name 
+create_header_only_target(manual_library_name
     "${CMAKE_CURRENT_SOURCE_DIR}/library_name/include"
 )
 add_library(third_party::library_name ALIAS manual_library_name)
 ```
 
 **Usage:**
+
 ```cpp
 #include <library_name/header1.h>
 ```
@@ -87,6 +92,7 @@ add_library(third_party::library_name ALIAS manual_library_name)
 For libraries that need to be compiled from source:
 
 **Structure:**
+
 ```
 library_name/
 ├── include/
@@ -99,8 +105,9 @@ library_name/
 ```
 
 **CMake Integration:**
+
 ```cmake
-create_compiled_target(manual_library_name 
+create_compiled_target(manual_library_name
     "${CMAKE_CURRENT_SOURCE_DIR}/library_name/src"
     "${CMAKE_CURRENT_SOURCE_DIR}/library_name/include"
 )
@@ -112,6 +119,7 @@ add_library(third_party::library_name ALIAS manual_library_name)
 For libraries distributed as pre-compiled binaries:
 
 **Structure:**
+
 ```
 library_name/
 ├── include/
@@ -125,9 +133,10 @@ library_name/
 ```
 
 **CMake Integration:**
+
 ```cmake
 add_library(manual_library_name UNKNOWN IMPORTED)
-target_include_directories(manual_library_name INTERFACE 
+target_include_directories(manual_library_name INTERFACE
     "${CMAKE_CURRENT_SOURCE_DIR}/library_name/include"
 )
 set_target_properties(manual_library_name PROPERTIES
@@ -141,6 +150,7 @@ add_library(third_party::library_name ALIAS manual_library_name)
 For libraries that include their own CMakeLists.txt:
 
 **Structure:**
+
 ```
 library_name/
 ├── CMakeLists.txt
@@ -150,6 +160,7 @@ library_name/
 ```
 
 **CMake Integration:**
+
 ```cmake
 # Set options to disable unwanted features
 set(LIBRARY_BUILD_TESTS OFF CACHE BOOL "Disable library tests")
@@ -196,14 +207,14 @@ if(NEWLIBRARY_AVAILABLE)
         add_library(third_party::newlibrary ALIAS newlibrary)
     elseif(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/newlibrary/src")
         # Compiled library
-        create_compiled_target(manual_newlibrary 
+        create_compiled_target(manual_newlibrary
             "${CMAKE_CURRENT_SOURCE_DIR}/newlibrary/src"
             "${CMAKE_CURRENT_SOURCE_DIR}/newlibrary/include"
         )
         add_library(third_party::newlibrary ALIAS manual_newlibrary)
     else()
         # Header-only library
-        create_header_only_target(manual_newlibrary 
+        create_header_only_target(manual_newlibrary
             "${CMAKE_CURRENT_SOURCE_DIR}/newlibrary/include"
         )
         add_library(third_party::newlibrary ALIAS manual_newlibrary)
@@ -245,14 +256,17 @@ Brief description of the library and its purpose.
 ```
 
 ## CMake Integration
+
 ```cmake
 target_link_libraries(your_target PRIVATE third_party::library_name)
 ```
 
 ## Notes
+
 - Any special configuration notes
 - Known issues or limitations
 - Custom modifications made
+
 ```
 
 ## Best Practices
@@ -354,7 +368,7 @@ Add to `third_party/manual/CMakeLists.txt`:
 ```cmake
 check_manual_dependency("MyLib" "mylib" MYLIB_AVAILABLE)
 if(MYLIB_AVAILABLE)
-    create_compiled_target(manual_mylib 
+    create_compiled_target(manual_mylib
         "${CMAKE_CURRENT_SOURCE_DIR}/mylib/src"
         "${CMAKE_CURRENT_SOURCE_DIR}/mylib/include"
     )

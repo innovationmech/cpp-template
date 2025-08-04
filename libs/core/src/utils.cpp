@@ -26,11 +26,11 @@ std::vector<std::string> split(const std::string& input, char delimiter) {
     std::vector<std::string> result;
     std::stringstream ss(input);
     std::string item;
-    
+
     while (std::getline(ss, item, delimiter)) {
         result.push_back(item);
     }
-    
+
     return result;
 }
 
@@ -38,35 +38,33 @@ std::string join(const std::vector<std::string>& strings, const std::string& del
     if (strings.empty()) {
         return "";
     }
-    
+
     std::string result = strings[0];
     for (size_t i = 1; i < strings.size(); ++i) {
         result += delimiter + strings[i];
     }
-    
+
     return result;
 }
 
-} // namespace string
+}  // namespace string
 
 namespace validation {
 
 bool isEmpty(const std::string& input) {
-    return input.empty() || 
-           std::all_of(input.begin(), input.end(), 
-                      [](unsigned char c) { return std::isspace(c); });
+    return input.empty() ||
+           std::all_of(input.begin(), input.end(), [](unsigned char c) { return std::isspace(c); });
 }
 
 bool isAlphanumeric(const std::string& input) {
     if (input.empty()) {
         return false;
     }
-    
-    return std::all_of(input.begin(), input.end(),
-                      [](unsigned char c) { return std::isalnum(c); });
+
+    return std::all_of(input.begin(), input.end(), [](unsigned char c) { return std::isalnum(c); });
 }
 
-} // namespace validation
-} // namespace utils
-} // namespace core
-} // namespace cpp_template
+}  // namespace validation
+}  // namespace utils
+}  // namespace core
+}  // namespace cpp_template

@@ -3,7 +3,7 @@
 # Comprehensive validation script for cpp-template project
 # This script validates all dependency management methods and functionality
 
-set -e  # Exit on any error
+set -e # Exit on any error
 
 echo "=== C++ Template Validation Script ==="
 echo "Testing all dependency management methods and functionality"
@@ -32,11 +32,11 @@ print_error() {
 run_tests() {
     local build_dir=$1
     local description=$2
-    
+
     print_status "Running tests in $build_dir ($description)"
-    
+
     cd "$build_dir"
-    
+
     # Run all tests
     if ctest --output-on-failure; then
         print_status "✓ All tests passed in $description"
@@ -44,15 +44,15 @@ run_tests() {
         print_error "✗ Tests failed in $description"
         return 1
     fi
-    
+
     # Run application
-    if ./bin/cpp-template > /dev/null 2>&1; then
+    if ./bin/cpp-template >/dev/null 2>&1; then
         print_status "✓ Application runs successfully in $description"
     else
         print_error "✗ Application failed to run in $description"
         return 1
     fi
-    
+
     cd ..
 }
 
@@ -60,9 +60,9 @@ run_tests() {
 validate_build() {
     local build_dir=$1
     local description=$2
-    
+
     print_status "Validating build configuration for $description"
-    
+
     # Check if required files exist
     if [[ -f "$build_dir/bin/cpp-template" ]]; then
         print_status "✓ Main executable exists"
@@ -70,16 +70,17 @@ validate_build() {
         print_error "✗ Main executable missing"
         return 1
     fi
-    
+
     if [[ -f "$build_dir/lib/libcpp-template-core.a" ]]; then
         print_status "✓ Core library exists"
     else
         print_error "✗ Core library missing"
         return 1
     fi
-    
+
     # Check test executables
-    local test_count=$(find "$build_dir/tests" -name "test_*" -type f 2>/dev/null | wc -l)
+    local test_count
+    test_count=$(find "$build_dir/tests" -name "test_*" -type f 2>/dev/null | wc -l)
     if [[ $test_count -gt 0 ]]; then
         print_status "✓ Test executables exist ($test_count found)"
     else
@@ -207,9 +208,9 @@ else
     print_warning "Platform detection not found in CMake"
 fi
 
-if [[ -f "libs/core/src/platform/macos_utils.cpp" ]] && 
-   [[ -f "libs/core/src/platform/linux_utils.cpp" ]] && 
-   [[ -f "libs/core/src/platform/windows_utils.cpp" ]]; then
+if [[ -f "libs/core/src/platform/macos_utils.cpp" ]] &&
+    [[ -f "libs/core/src/platform/linux_utils.cpp" ]] &&
+    [[ -f "libs/core/src/platform/windows_utils.cpp" ]]; then
     print_status "✓ Platform-specific source files exist"
 else
     print_warning "Some platform-specific source files missing"

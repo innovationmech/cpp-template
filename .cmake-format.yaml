@@ -1,0 +1,58 @@
+# =============================================================================
+# .cmake-format.yaml - CMake Code Formatting Configuration
+# Simplified configuration for cmake-format tool compatibility
+# =============================================================================
+
+# Parse configuration
+parse:
+  # Variables to treat as lists
+  vartags: []
+  # Properties with global scope
+  proptags: []
+
+# Format configuration
+format:
+  # Tab size for tab/space conversion
+  tab_size: 4
+  # Use tabs instead of spaces
+  use_tabchars: false
+  # Line width for formatting
+  line_width: 100
+  # Line ending style
+  line_ending: 'unix'
+  # Maximum consecutive empty lines
+  max_subgroups_hwrap: 2
+  # Maximum arguments that will be unpacked for a function
+  max_pargs_hwrap: 6
+  # Close paren on separate line
+  dangle_parens: false
+  # Separate control statement name with space
+  separate_ctrl_name_with_space: false
+  # Separate function name with space
+  separate_fn_name_with_space: false
+  # Hanging indent for function arguments
+  dangle_align: 'prefix'
+
+# Markup configuration
+markup:
+  # Enable markup parsing and rendering
+  enable_markup: true
+  # First comment line is treated as documentation if true
+  first_comment_is_literal: false
+  # Fence pattern for code blocks
+  fence_pattern: '^\\s*([`~]{3}[`~]*)(.*)$'
+  # Ruler pattern
+  ruler_pattern: '^\\s*[^\\w\\s]{3}.*[^\\w\\s]{3}$'
+  # Explicit trailing pattern
+  explicit_trailing_pattern: '#<'
+  # Hash ruler minimum length
+  hashruler_min_length: 10
+
+# Lint configuration
+lint:
+  # List of disabled lint checks
+  disabled_codes: []
+  # Function pattern to check for naming conventions
+  function_pattern: '[0-9a-z_]+'
+  # Macro pattern to check for naming conventions
+  macro_pattern: '[0-9A-Z_]+'

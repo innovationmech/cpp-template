@@ -1,0 +1,155 @@
+# =============================================================================
+# Local Test Workflow - Simplified version for local testing with act
+# This workflow tests the core build and package functionality locally
+# without requiring GitHub-specific features like releases
+#
+# Usage with act:
+#   act -j local-build-test
+#   act -j local-version-test
+# =============================================================================
+
+name: Local Test
+
+on:
+  push:
+    branches: [ master, main, develop ]
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  # =============================================================================
+  # Local Version Detection Test
+  # =============================================================================
+  local-version-test:
+    name: Test Version Detection
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Test version detection logic
+        run: |
+          echo "🔍 Testing version detection..."
+
+          # Get current version from CMakeLists.txt
+          current_version=$(grep -E "^\s*VERSION\s+[0-9]+\.[0-9]+\.[0-9]+" CMakeLists.txt | head -1 | sed -E 's/.*VERSION\s+([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
+
+          if [ -z "$current_version" ]; then
+            echo "❌ Could not find version in CMakeLists.txt"
+            exit 1
+          fi
+
+          echo "✅ Current version: $current_version"
+
+          # Test commit message parsing
+          echo "🧪 Testing commit message parsing..."
+
+          # Simulate different commit types
+          test_commits=(
+            "fix: resolve memory leak"
+            "feat: add new configuration"
+            "feat!: breaking change"
+            "chore: update documentation"
+            "fix(parser): handle edge case"
+            "feat(api): add new endpoint [minor]"
+            "refactor: major rewrite [major]"
+          )
+
+          for commit in "${test_commits[@]}"; do
+            echo "Testing: $commit"
+
+            if echo "$commit" | grep -qiE "\[major\]|BREAKING CHANGE:|^[a-zA-Z0-9_-]+!:"; then
+              echo "  → Major version bump"
+            elif echo "$commit" | grep -qiE "feat:|^feat\(.*\):|^\[minor\]"; then
+              echo "  → Minor version bump"
+            else
+              echo "  → Patch version bump"
+            fi
+          done
+
+          echo "✅ Version detection test completed"
+
+  # =============================================================================
+  # Local Build and Package Test
+  # =============================================================================
+  local-build-test:
+    name: Test Build and Package
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            cmake \
+            ninja-build \
+            pkg-config \
+            libgtest-dev \
+            libgmock-dev \
+            dpkg-dev
+
+      - name: Test CMake configuration
+        run: |
+          echo "🔧 Testing CMake configuration..."
+          cmake -B build -S . \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX=install \
+            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+            -DENABLE_CLANG_TIDY=OFF \
+            -DENABLE_CPPCHECK=OFF \
+            -G Ninja
+
+          echo "✅ CMake configuration successful"
+
+      - name: Test build
+        run: |
+          echo "🔨 Testing build..."
+          cmake --build build --config Release --parallel
+          echo "✅ Build successful"
+
+      - name: Test installation
+        run: |
+          echo "📦 Testing installation..."
+          cmake --install build --config Release
+          echo "✅ Installation successful"
+
+      - name: Test package creation
+        run: |
+          echo "📦 Testing package creation..."
+          cd build
+
+          # Test available generators
+          echo "Available CPack generators:"
+          cpack --help | grep -A 20 "Available generators:"
+
+          # Create TGZ package (should work on all systems)
+          echo "Creating TGZ package..."
+          cpack -G TGZ -C Release -V
+
+          # Try DEB package if possible
+          if command -v dpkg-deb >/dev/null 2>&1; then
+            echo "Creating DEB package..."
+            cpack -G DEB -C Release -V
+          else
+            echo "dpkg-deb not available, skipping DEB package"
+          fi
+
+          echo "✅ Package creation successful"
+
+      - name: List generated files
+        run: |
+          echo "📋 Generated packages:"
+          find build -name "cpp-template-*" -type f | sort
+
+          echo "📋 Package details:"
+          for file in build/cpp-template-*; do
+            if [ -f "$file" ]; then
+              echo "  $(basename "$file"): $(ls -lh "$file" | awk '{print $5}')"
+            fi
+          done

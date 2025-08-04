@@ -1,8 +1,8 @@
 #include "config_manager.h"
-#include <fstream>
-#include <sstream>
 #include <algorithm>
+#include <fstream>
 #include <iostream>
+#include <sstream>
 
 namespace cpp_template {
 namespace modules {
@@ -22,30 +22,33 @@ bool ConfigManager::loadFromFile(const std::string& filename) {
         std::cerr << "Warning: Could not open config file: " << filename << std::endl;
         return false;
     }
-    
+
+    // Clear existing configuration to ensure file values take precedence
+    config_data_.clear();
+
     std::string line;
     while (std::getline(file, line)) {
         // Skip empty lines and comments
         if (line.empty() || line[0] == '#') {
             continue;
         }
-        
+
         // Find the '=' separator
         size_t pos = line.find('=');
         if (pos != std::string::npos) {
             std::string key = line.substr(0, pos);
             std::string value = line.substr(pos + 1);
-            
+
             // Trim whitespace
             key.erase(0, key.find_first_not_of(" \t"));
             key.erase(key.find_last_not_of(" \t") + 1);
             value.erase(0, value.find_first_not_of(" \t"));
             value.erase(value.find_last_not_of(" \t") + 1);
-            
+
             config_data_[key] = value;
         }
     }
-    
+
     is_loaded_ = true;
     return true;
 }
@@ -69,11 +72,11 @@ bool ConfigManager::hasKey(const std::string& key) const {
 std::vector<std::string> ConfigManager::getAllKeys() const {
     std::vector<std::string> keys;
     keys.reserve(config_data_.size());
-    
+
     for (const auto& pair : config_data_) {
         keys.push_back(pair.first);
     }
-    
+
     return keys;
 }
 
@@ -86,5 +89,5 @@ std::unique_ptr<ConfigManager> createConfigManager() {
     return std::make_unique<ConfigManager>();
 }
 
-} // namespace modules
-} // namespace cpp_template
+}  // namespace modules
+}  // namespace cpp_template

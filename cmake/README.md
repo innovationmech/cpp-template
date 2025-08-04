@@ -4,7 +4,7 @@ This directory contains custom CMake modules that provide standardized build con
 
 ## Available Modules
 
-### CompilerOptions.cmake
+### CompilerOptions.CMake
 
 Provides standardized compiler settings and options for consistent builds across different compilers and platforms.
 
@@ -30,7 +30,7 @@ set_project_compiler_options(my_app)
 - Debug and Release configuration optimization
 - Platform-specific definitions and settings
 
-### FindCustomLib.cmake
+### FindCustomLib.CMake
 
 Example find module for manual dependency management. Demonstrates how to create custom find modules for libraries that don't provide CMake configuration files.
 
@@ -58,7 +58,7 @@ To adapt this module for your own library:
 
 - `CUSTOMLIB_ROOT`: Set to specify custom installation directory
 
-### VcpkgHelpers.cmake
+### VcpkgHelpers.CMake
 
 Provides utilities for vcpkg integration and dependency management with fallback options.
 
@@ -94,7 +94,7 @@ export CMAKE_TOOLCHAIN_FILE=/path/to/vcpkg/scripts/buildsystems/vcpkg.cmake
 cmake ..
 ```
 
-#### vcpkg.json Manifest
+#### vcpkg.JSON Manifest
 
 The project uses vcpkg manifest mode with dependencies defined in `vcpkg.json`:
 

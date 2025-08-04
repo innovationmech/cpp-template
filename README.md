@@ -87,6 +87,7 @@ cpp-template/
 ### Platform-Specific Requirements
 
 #### macOS
+
 ```bash
 # Install Xcode Command Line Tools
 xcode-select --install
@@ -99,6 +100,7 @@ brew install cmake git ninja
 ```
 
 #### Ubuntu/Debian
+
 ```bash
 # Update package list
 sudo apt update
@@ -108,6 +110,7 @@ sudo apt install build-essential cmake git ninja-build pkg-config
 ```
 
 #### Fedora/RHEL/CentOS
+
 ```bash
 # Install development tools
 sudo dnf groupinstall "Development Tools"
@@ -115,6 +118,7 @@ sudo dnf install cmake git ninja-build pkgconfig
 ```
 
 #### Windows
+
 ```powershell
 # Install Chocolatey (run as Administrator)
 Set-ExecutionPolicy Bypass -Scope Process -Force
@@ -227,7 +231,7 @@ Edit `vcpkg.json` to add new dependencies:
 }
 ```
 
-For detailed vcpkg usage, see [cmake/VcpkgGuide.md](cmake/VcpkgGuide.md).
+For detailed vcpkg usage, see [CMake/VcpkgGuide.md](cmake/VcpkgGuide.md).
 
 ### 2. System Package Managers
 
@@ -255,7 +259,7 @@ cmake -B build -S .
 cmake --build build
 ```
 
-For detailed system package usage, see [cmake/SystemPackagesGuide.md](cmake/SystemPackagesGuide.md).
+For detailed system package usage, see [CMake/SystemPackagesGuide.md](cmake/SystemPackagesGuide.md).
 
 ### 3. Git Submodules
 
@@ -273,7 +277,7 @@ cmake -B build -S .
 cmake --build build
 ```
 
-For detailed submodule usage, see [cmake/GitSubmodulesGuide.md](cmake/GitSubmodulesGuide.md).
+For detailed submodule usage, see [CMake/GitSubmodulesGuide.md](cmake/GitSubmodulesGuide.md).
 
 ### 4. Manual Dependencies
 
@@ -289,7 +293,7 @@ cmake -B build -S .
 cmake --build build
 ```
 
-For detailed manual dependency management, see [cmake/ManualDependenciesGuide.md](cmake/ManualDependenciesGuide.md).
+For detailed manual dependency management, see [CMake/ManualDependenciesGuide.md](cmake/ManualDependenciesGuide.md).
 
 ## Building the Project
 
@@ -367,6 +371,7 @@ ctest --parallel 4
 3. Follow Google Test conventions
 
 Example:
+
 ```cpp
 #include <gtest/gtest.h>
 #include "your_component.h"
@@ -445,6 +450,7 @@ C:\vcpkg\bootstrap-vcpkg.bat
 #### Visual Studio Code
 
 Install recommended extensions:
+
 - C/C++ Extension Pack
 - CMake Tools
 - GitLens
