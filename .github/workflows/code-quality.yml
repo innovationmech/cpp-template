@@ -16,6 +16,7 @@ on:
       - '.clang-format'
       - '.clang-tidy'
       - '.cmake-format.yaml'
+      - '.github/workflows/**'
   pull_request:
     branches: [ master ]
     paths:
@@ -31,6 +32,7 @@ on:
       - '.clang-format'
       - '.clang-tidy'
       - '.cmake-format.yaml'
+      - '.github/workflows/**'
 
 # Concurrency control - avoid canceling running quality checks to prevent instability
 concurrency:
