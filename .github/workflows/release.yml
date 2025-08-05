@@ -232,12 +232,10 @@ jobs:
 
       - name: Create Release
         id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.tag }}
-          release_name: "Release ${{ steps.version.outputs.tag }}"
+          name: "Release ${{ steps.version.outputs.tag }}"
           body: |
             ## 🚀 Release ${{ steps.version.outputs.tag }}
 
@@ -284,37 +282,8 @@ jobs:
             🤖 Generated with [Claude Code](https://claude.ai/code)
           draft: false
           prerelease: false
-
-      - name: Upload Release Assets
-        run: |
-          # Upload all package files as release assets
-          for file in packages/**/*; do
-            if [ -f "$file" ]; then
-              filename=$(basename "$file")
-              echo "📤 Uploading: $filename"
-
-              # Determine content type based on file extension
-              case "${filename##*.}" in
-                "deb") content_type="application/vnd.debian.binary-package" ;;
-                "rpm") content_type="application/x-rpm" ;;
-                "dmg") content_type="application/x-apple-diskimage" ;;
-                "exe") content_type="application/vnd.microsoft.portable-executable" ;;
-                "msi") content_type="application/x-msi" ;;
-                "zip") content_type="application/zip" ;;
-                "tar.gz"|"tgz") content_type="application/gzip" ;;
-                *) content_type="application/octet-stream" ;;
-              esac
-
-              curl -L \
-                -X POST \
-                -H "Accept: application/vnd.github+json" \
-                -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-                -H "X-GitHub-Api-Version: 2022-11-28" \
-                -H "Content-Type: $content_type" \
-                "${{ steps.create_release.outputs.upload_url }}?name=$filename" \
-                --data-binary "@$file" || echo "Failed to upload $filename"
-            fi
-          done
+          files: |
+            packages/**/*
 
       - name: Release Summary
         run: |
@@ -322,7 +291,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Version:** ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "**Tag:** ${{ steps.version.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Release URL:** ${{ steps.create_release.outputs.html_url }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Release URL:** ${{ steps.create_release.outputs.url }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 📦 Generated Packages" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
