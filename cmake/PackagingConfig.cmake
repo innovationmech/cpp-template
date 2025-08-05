@@ -12,6 +12,9 @@
 if(PROJECT_IS_TOP_LEVEL OR CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     message(STATUS "Configuring packaging for ${PROJECT_NAME}")
 
+    # Set package contact before including CPack
+    set(CPACK_PACKAGE_CONTACT "developer@example.com")
+
     # Include CPack module
     include(CPack)
 
@@ -24,7 +27,6 @@ if(PROJECT_IS_TOP_LEVEL OR CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     set(CPACK_PACKAGE_VERSION "${PROJECT_VERSION}")
     set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${PROJECT_DESCRIPTION}")
     set(CPACK_PACKAGE_VENDOR "cpp-template project")
-    set(CPACK_PACKAGE_CONTACT "developer@example.com")
 
     # Package description file (if it exists)
     if(EXISTS "${CMAKE_SOURCE_DIR}/README.md")
