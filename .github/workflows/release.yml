@@ -1,12 +1,11 @@
 # =============================================================================
-# Release Workflow - Automatic Tag, Build, Package and Release
-# This workflow automatically creates tags, builds packages, and creates GitHub
-# releases when changes are pushed to the master branch.
+# Release Workflow - Build, Package and Release on Tag
+# This workflow builds packages and creates GitHub releases when tags are pushed.
 #
-# Version Management:
-# - Commit messages with [major] or BREAKING CHANGE: → major version (1.0.0 → 2.0.0)
-# - Commit messages with feat: or [minor] → minor version (1.0.0 → 1.1.0)
-# - Other commits → patch version (1.0.0 → 1.0.1)
+# Usage:
+# - Create a tag manually: git tag -a v1.2.3 -m "Release v1.2.3"
+# - Push the tag: git push origin v1.2.3
+# - Or create a release tag directly on GitHub
 #
 # Supported Platforms: Ubuntu, Windows, macOS
 # Package Formats: TGZ, ZIP, DEB, RPM, DMG, NSIS (platform dependent)
@@ -16,12 +15,8 @@ name: Release
 
 on:
   push:
-    branches: [ master, main ]
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - '.github/**'
-      - '!.github/workflows/release.yml'
+    tags:
+      - 'v*'
 
 # Concurrency control - avoid canceling running builds to prevent instability
 concurrency:
@@ -35,133 +30,12 @@ permissions:
   pull-requests: read
 
 jobs:
-  # =============================================================================
-  # Version Detection and Tagging
-  # =============================================================================
-  version:
-    name: Determine Version
-    runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.version.outputs.version }}
-      tag: ${{ steps.version.outputs.tag }}
-      should_release: ${{ steps.version.outputs.should_release }}
-      changelog: ${{ steps.version.outputs.changelog }}
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Determine version bump
-        id: version
-        run: |
-          # Get current version from CMakeLists.txt
-          current_version=$(grep -E "^\s*VERSION\s+[0-9]+\.[0-9]+\.[0-9]+" CMakeLists.txt | head -1 | sed -E 's/.*VERSION\s+([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
-
-          if [ -z "$current_version" ]; then
-            echo "Could not find version in CMakeLists.txt"
-            current_version="1.0.0"
-          fi
-
-          echo "Current version: $current_version"
-
-          # Check if this version is already tagged
-          if git tag -l "v$current_version" | grep -q "v$current_version"; then
-            echo "Version v$current_version already tagged"
-
-            # Get commits since last tag
-            last_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-            if [ -n "$last_tag" ]; then
-              commits_since_tag=$(git log $last_tag..HEAD --oneline)
-            else
-              commits_since_tag=$(git log --oneline)
-            fi
-
-            if [ -z "$commits_since_tag" ]; then
-              echo "No new commits since last tag"
-              echo "should_release=false" >> $GITHUB_OUTPUT
-              echo "version=$current_version" >> $GITHUB_OUTPUT
-              echo "tag=v$current_version" >> $GITHUB_OUTPUT
-              exit 0
-            fi
-
-            # Parse current version
-            IFS='.' read -r major minor patch <<< "$current_version"
-
-            # Determine version bump based on commit messages
-            commit_messages=$(git log $last_tag..HEAD --pretty=format:"%s")
-
-            if echo "$commit_messages" | grep -qiE "\[major\]|BREAKING CHANGE:|^[a-zA-Z0-9_-]+!:"; then
-              new_version="$((major + 1)).0.0"
-              echo "🚀 Major version bump detected"
-            elif echo "$commit_messages" | grep -qiE "feat:|^feat\(.*\):|^\[minor\]"; then
-              new_version="$major.$((minor + 1)).0"
-              echo "✨ Minor version bump detected"
-            else
-              new_version="$major.$minor.$((patch + 1))"
-              echo "🐛 Patch version bump detected"
-            fi
-
-            echo "New version: $new_version"
-
-            # Update CMakeLists.txt with new version
-            sed -i.bak -E "s/(VERSION\s+)[0-9]+\.[0-9]+\.[0-9]+/\1$new_version/" CMakeLists.txt
-
-            # Check if file was actually changed
-            if ! diff CMakeLists.txt CMakeLists.txt.bak > /dev/null 2>&1; then
-              echo "Version updated in CMakeLists.txt"
-              # Commit the version update
-              git config --local user.email "action@github.com"
-              git config --local user.name "GitHub Action"
-              git add CMakeLists.txt
-              git commit -m "chore: bump version to $new_version [skip ci]"
-              git push
-            else
-              echo "Failed to update version in CMakeLists.txt"
-            fi
-
-            rm -f CMakeLists.txt.bak
-
-          else
-            new_version="$current_version"
-            echo "Using current version from CMakeLists.txt: $new_version"
-          fi
-
-          # Generate changelog since last tag
-          last_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-          if [ -n "$last_tag" ]; then
-            changelog=$(git log $last_tag..HEAD --pretty=format:"- %s (%h)" --no-merges)
-          else
-            changelog=$(git log --pretty=format:"- %s (%h)" --no-merges -10)
-          fi
-
-          # Set outputs
-          echo "should_release=true" >> $GITHUB_OUTPUT
-          echo "version=$new_version" >> $GITHUB_OUTPUT
-          echo "tag=v$new_version" >> $GITHUB_OUTPUT
-
-          # Save changelog to file for multiline output
-          cat << 'EOF' > changelog.txt
-          $changelog
-          EOF
-
-          echo "changelog<<CHANGELOG_EOF" >> $GITHUB_OUTPUT
-          cat changelog.txt >> $GITHUB_OUTPUT
-          echo "CHANGELOG_EOF" >> $GITHUB_OUTPUT
-
-          echo "Version: $new_version"
-          echo "Tag: v$new_version"
-          echo "Should release: true"
 
   # =============================================================================
   # Multi-Platform Build and Package
   # =============================================================================
   build:
     name: Build and Package
-    needs: version
-    if: needs.version.outputs.should_release == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -257,12 +131,12 @@ jobs:
 
       - name: Configure CMake
         run: |
-          cmake -B build -S . `
-            -DCMAKE_BUILD_TYPE=Release `
-            -DCMAKE_INSTALL_PREFIX=install `
-            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON `
-            -DENABLE_CLANG_TIDY=OFF `
-            -DENABLE_CPPCHECK=OFF `
+          cmake -B build -S . \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX=install \
+            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+            -DENABLE_CLANG_TIDY=OFF \
+            -DENABLE_CPPCHECK=OFF \
             -G Ninja
 
       - name: Build project
@@ -303,13 +177,48 @@ jobs:
   # =============================================================================
   release:
     name: Create Release
-    needs: [version, build]
-    if: needs.version.outputs.should_release == 'true'
+    needs: build
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          # Get tag name from ref (e.g., v1.2.3)
+          tag_name="${{ github.ref_name }}"
+          # Remove 'v' prefix to get version (e.g., 1.2.3)
+          version=${tag_name#v}
+
+          echo "Tag: $tag_name"
+          echo "Version: $version"
+
+          echo "tag=$tag_name" >> $GITHUB_OUTPUT
+          echo "version=$version" >> $GITHUB_OUTPUT
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Get previous tag
+          current_tag="${{ github.ref_name }}"
+          previous_tag=$(git describe --tags --abbrev=0 $current_tag^ 2>/dev/null || echo "")
+
+          if [ -n "$previous_tag" ]; then
+            echo "Generating changelog from $previous_tag to $current_tag"
+            changelog=$(git log $previous_tag..$current_tag --pretty=format:"- %s (%h)" --no-merges)
+          else
+            echo "No previous tag found, showing last 10 commits"
+            changelog=$(git log --pretty=format:"- %s (%h)" --no-merges -10)
+          fi
+
+          # Save changelog for multiline output
+          echo "changelog<<CHANGELOG_EOF" >> $GITHUB_OUTPUT
+          echo "$changelog" >> $GITHUB_OUTPUT
+          echo "CHANGELOG_EOF" >> $GITHUB_OUTPUT
 
       - name: Download all package artifacts
         uses: actions/download-artifact@v4
@@ -321,28 +230,21 @@ jobs:
           echo "📁 Downloaded artifacts:"
           find packages/ -type f | sort
 
-      - name: Create git tag
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git tag -a "${{ needs.version.outputs.tag }}" -m "Release ${{ needs.version.outputs.tag }}"
-          git push origin "${{ needs.version.outputs.tag }}"
-
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ needs.version.outputs.tag }}
-          release_name: "Release ${{ needs.version.outputs.tag }}"
+          tag_name: ${{ steps.version.outputs.tag }}
+          release_name: "Release ${{ steps.version.outputs.tag }}"
           body: |
-            ## 🚀 Release ${{ needs.version.outputs.tag }}
+            ## 🚀 Release ${{ steps.version.outputs.tag }}
 
-            Automatically generated release from master branch.
+            Automatically generated release from tag push.
 
             ### 📋 Changes
-            ${{ needs.version.outputs.changelog }}
+            ${{ steps.changelog.outputs.changelog }}
 
             ### 📦 Package Downloads
             - **Linux**: TGZ archive and DEB package
@@ -418,8 +320,8 @@ jobs:
         run: |
           echo "## 🎉 Release Created Successfully!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Version:** ${{ needs.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Tag:** ${{ needs.version.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Tag:** ${{ steps.version.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
           echo "**Release URL:** ${{ steps.create_release.outputs.html_url }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 📦 Generated Packages" >> $GITHUB_STEP_SUMMARY

@@ -328,3 +328,6 @@ external/
 # Generated documentation
 docs/generated/
 /install/
+
+# tools
+.claude/
