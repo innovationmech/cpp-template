@@ -158,15 +158,19 @@ $<$<PLATFORM_ID:Darwin>:src/platform/macos_utils.cpp>
 
 ### GitHub Actions Release Workflow
 
-The project includes an automated release workflow that creates tags, builds packages, and publishes GitHub releases when changes are merged to the master branch.
+The project includes an automated release workflow that builds packages and publishes GitHub releases when tags are pushed.
 
-#### Version Management
+#### Tag-Based Release Process
 
-The release workflow uses semantic versioning based on commit messages:
+The release workflow is triggered by pushing version tags (starting with 'v'):
 
-- **Major version** (1.0.0 → 2.0.0): Commit messages containing `[major]`, `BREAKING CHANGE:`, or `!:`
-- **Minor version** (1.0.0 → 1.1.0): Commit messages starting with `feat:` or containing `[minor]`
-- **Patch version** (1.0.0 → 1.0.1): All other commits
+```bash
+# Create and push a release tag
+git tag -a v1.2.3 -m "Release v1.2.3"
+git push origin v1.2.3
+
+# Or create a release tag directly on GitHub web interface
+```
 
 #### Supported Platforms and Formats
 
@@ -176,35 +180,22 @@ The workflow builds and packages for multiple platforms:
 - **Windows**: ZIP archive, NSIS installer
 - **macOS**: TGZ archive, DMG disk image
 
-#### Release Commands
+#### Release Process
+
+1. **Manual Tag Creation**: Developer creates and pushes a version tag
+2. **Automatic Trigger**: Tag push triggers the release workflow
+3. **Version Extraction**: Extracts version from tag name (e.g., v1.2.3 → 1.2.3)
+4. **Cross-Platform Build**: Builds on Ubuntu, Windows, and macOS
+5. **Package Creation**: Uses CPack to generate platform-specific packages
+6. **Changelog Generation**: Automatically generates changelog from commits between tags
+7. **GitHub Release**: Creates release with all package artifacts
+
+#### Manual Package Creation (Local Testing)
 
 ```bash
-# Trigger a patch release
-git commit -m "fix: resolve memory leak in parser"
-
-# Trigger a minor release
-git commit -m "feat: add new configuration options"
-
-# Trigger a major release
-git commit -m "feat!: redesign public API"
-# or
-git commit -m "feat: major refactor
-
-BREAKING CHANGE: The public API has been completely redesigned"
-
-# Manual package creation (local testing)
 cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
 cmake --build build --target package
 ```
-
-#### Release Process
-
-1. **Automatic Trigger**: Push to master branch triggers the workflow
-2. **Version Detection**: Analyzes commits to determine version bump
-3. **Cross-Platform Build**: Builds on Ubuntu, Windows, and macOS
-4. **Package Creation**: Uses CPack to generate platform-specific packages
-5. **GitHub Release**: Creates tagged release with all package artifacts
-6. **Changelog Generation**: Automatically generates changelog from commits
 
 #### Configuration Files
 
