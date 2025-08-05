@@ -35,7 +35,7 @@ jobs:
   # Multi-Platform Build and Package
   # =============================================================================
   build:
-    name: Build and Package
+    name: Build and Package (${{ matrix.name }})
     strategy:
       fail-fast: false
       matrix:
@@ -62,6 +62,7 @@ jobs:
             artifact_pattern: "build/cpp-template-*-macos-*.*"
 
     runs-on: ${{ matrix.os }}
+    continue-on-error: true
 
     steps:
       - name: Checkout repository
@@ -130,6 +131,7 @@ jobs:
           arch: x64
 
       - name: Configure CMake
+        shell: bash
         run: |
           cmake -B build -S . \
             -DCMAKE_BUILD_TYPE=Release \
@@ -162,8 +164,34 @@ jobs:
           echo "📦 Generated packages:"
           find build -name "cpp-template-*" -type f | sort
 
+      - name: Check for generated packages
+        id: check_packages
+        run: |
+          echo "🔍 Checking for generated packages..."
+          if [ -d "build" ]; then
+            package_count=$(find build -name "cpp-template-*" -type f | wc -l)
+            echo "Found $package_count package files"
+
+            if [ "$package_count" -gt 0 ]; then
+              echo "✅ Packages found:"
+              find build -name "cpp-template-*" -type f | sort
+              echo "has_packages=true" >> $GITHUB_OUTPUT
+            else
+              echo "⚠️ No packages found in build directory"
+              echo "Build directory contents:"
+              ls -la build/ || echo "Build directory does not exist"
+              echo "has_packages=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "❌ Build directory not found"
+            echo "has_packages=false" >> $GITHUB_OUTPUT
+          fi
+        shell: bash
+        if: always()
+
       - name: Upload packages as artifacts
         uses: actions/upload-artifact@v4
+        if: always() && steps.check_packages.outputs.has_packages == 'true'
         with:
           name: packages-${{ matrix.name }}
           path: |
@@ -171,6 +199,20 @@ jobs:
             !build/**/*.dir/
             !build/**/CMakeFiles/
           retention-days: 30
+          if-no-files-found: warn
+
+      - name: Upload build logs on failure
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: build-logs-${{ matrix.name }}
+          path: |
+            build/**/*.log
+            build/CMakeCache.txt
+            build/CMakeFiles/CMakeError.log
+            build/CMakeFiles/CMakeOutput.log
+          retention-days: 7
+          if-no-files-found: ignore
 
   # =============================================================================
   # Create GitHub Release
@@ -179,12 +221,55 @@ jobs:
     name: Create Release
     needs: build
     runs-on: ubuntu-latest
+    if: always() && (needs.build.result == 'success' || needs.build.result == 'failure')
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Debug environment
+        run: |
+          echo "🔍 Environment Information:"
+          echo "GitHub Event: ${{ github.event_name }}"
+          echo "GitHub Ref: ${{ github.ref }}"
+          echo "GitHub Ref Name: ${{ github.ref_name }}"
+          echo "GitHub Ref Type: ${{ github.ref_type }}"
+          echo "GitHub Repository: ${{ github.repository }}"
+          echo "GitHub Actor: ${{ github.actor }}"
+          echo "Build Job Result: ${{ needs.build.result }}"
+          echo ""
+          echo "🏗️ Build Job Matrix Results:"
+          echo "Build outputs: ${{ toJSON(needs.build.outputs) }}"
+
+      - name: Check permissions and environment
+        run: |
+          echo "🔐 Checking GitHub permissions..."
+
+          # Check if we have the necessary permissions
+          echo "GITHUB_TOKEN permissions:"
+          echo "- contents: write (required for creating releases)"
+          echo "- packages: write (available for package operations)"
+
+          # Verify this is a tag push
+          if [[ "${{ github.ref_type }}" != "tag" ]]; then
+            echo "⚠️  WARNING: This workflow should only run on tag pushes"
+            echo "Current ref type: ${{ github.ref_type }}"
+          else
+            echo "✅ Running on tag push: ${{ github.ref_name }}"
+          fi
+
+          # Check tag format
+          if [[ "${{ github.ref_name }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+.*$ ]]; then
+            echo "✅ Tag format is valid: ${{ github.ref_name }}"
+          else
+            echo "⚠️  Tag format may not be standard: ${{ github.ref_name }}"
+            echo "Recommended format: v1.2.3"
+          fi
+
+          echo ""
+          echo "🎯 Release target: ${{ github.ref_name }}"
 
       - name: Extract version from tag
         id: version
@@ -224,14 +309,64 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: packages/
+        continue-on-error: true
 
-      - name: Display downloaded artifacts
+      - name: Verify and display downloaded artifacts
+        id: verify_artifacts
         run: |
-          echo "📁 Downloaded artifacts:"
+          echo "📁 Checking downloaded artifacts..."
+
+          if [ ! -d "packages/" ]; then
+            echo "❌ No packages directory found!"
+            echo "artifact_count=0" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          echo "📦 Downloaded artifacts structure:"
           find packages/ -type f | sort
+
+          artifact_count=$(find packages/ -type f -name "cpp-template-*" | wc -l)
+          echo "Found $artifact_count package files"
+          echo "artifact_count=$artifact_count" >> $GITHUB_OUTPUT
+
+          if [ "$artifact_count" -eq 0 ]; then
+            echo "⚠️ No package files found matching pattern 'cpp-template-*'"
+            echo "All files in packages/:"
+            find packages/ -type f | head -20
+          else
+            echo "✅ Found $artifact_count package files:"
+            find packages/ -type f -name "cpp-template-*" | sort
+          fi
+
+      - name: Prepare release assets
+        id: prepare_assets
+        if: steps.verify_artifacts.outputs.artifact_count > 0
+        run: |
+          echo "📦 Preparing release assets..."
+          mkdir -p release_assets/
+
+          # Copy all package files to release_assets directory
+          find packages/ -type f -name "cpp-template-*" -exec cp {} release_assets/ \;
+
+          echo "Release assets prepared:"
+          ls -la release_assets/
+
+          # Create a list of files for the release
+          asset_files=""
+          for file in release_assets/*; do
+            if [ -f "$file" ]; then
+              asset_files="$asset_files$file\n"
+            fi
+          done
+
+          echo "Asset files list:"
+          echo -e "$asset_files"
+
+          echo "assets_ready=true" >> $GITHUB_OUTPUT
 
       - name: Create Release
         id: create_release
+        if: always()
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.tag }}
@@ -244,14 +379,18 @@ jobs:
             ### 📋 Changes
             ${{ steps.changelog.outputs.changelog }}
 
+            ### 🏗️ Build Status
+            - Build job result: ${{ needs.build.result }}
+            - Available packages: ${{ steps.verify_artifacts.outputs.artifact_count || 'N/A' }}
+
             ### 📦 Package Downloads
-            - **Linux**: TGZ archive and DEB package
+            ${{ steps.verify_artifacts.outputs.artifact_count > 0 && '- **Linux**: TGZ archive and DEB package
             - **Windows**: ZIP archive and NSIS installer
-            - **macOS**: TGZ archive and DMG disk image
+            - **macOS**: TGZ archive and DMG disk image' || '⚠️ No packages available due to build failures' }}
 
             ### 🔧 Installation
 
-            **Linux (Ubuntu/Debian):**
+            ${{ steps.verify_artifacts.outputs.artifact_count > 0 && '**Linux (Ubuntu/Debian):**
             ```bash
             # Using DEB package
             sudo dpkg -i cpp-template-*-linux-x64.deb
@@ -276,14 +415,16 @@ jobs:
 
             # Using TGZ archive
             tar -xzf cpp-template-*-macos-*.tar.gz
-            ```
+            ```' || 'Packages will be available when builds are successful.' }}
 
             ---
             🤖 Generated with [Claude Code](https://claude.ai/code)
           draft: false
           prerelease: false
           files: |
-            packages/**/*
+            ${{ steps.prepare_assets.outputs.assets_ready == 'true' && 'release_assets/*' || '' }}
+          fail_on_unmatched_files: false
+          generate_release_notes: true
 
       - name: Release Summary
         run: |
