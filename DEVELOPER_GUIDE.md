@@ -68,32 +68,79 @@ The build system uses modern CMake (3.20+) with target-based configuration:
 
 - **Top-level CMakeLists.txt**: Global configuration and project setup
 - **Component CMakeLists.txt**: Local configuration for each component
-- **Custom modules**: Reusable CMake functions and utilities
+- **Custom modules**: Reusable CMake functions and utilities in `cmake/` directory
+- **CMakePresets.json**: Predefined build configurations for different scenarios
+
+### CMake Presets Configuration
+
+The project uses CMakePresets.json for standardized build configurations:
+
+```bash
+# Default build (no vcpkg)
+cmake --preset default
+cmake --build build/default
+
+# vcpkg build (Release)
+cmake --preset vcpkg
+cmake --build build/vcpkg
+
+# vcpkg debug build
+cmake --preset vcpkg-debug
+cmake --build build/vcpkg-debug
+
+# vcpkg with optional features
+cmake --preset vcpkg-features
+cmake --build build/vcpkg-features
+```
 
 ### Key CMake Concepts Used
 
 1. **Target-based approach**: All configuration attached to specific targets
 2. **Generator expressions**: Platform and configuration-specific settings
 3. **Interface libraries**: Header-only and dependency management
-4. **Export/install**: Support for external project usage
+4. **vcpkg integration**: Automatic toolchain detection and configuration
+5. **IPO/LTO**: Link-time optimization for Release builds
+6. **Position Independent Code**: Enabled globally for security and compatibility
 
 ### Build Configuration Flow
 
-1. **Project setup**: Version, standards, global settings
-2. **Dependency resolution**: Find or download required libraries
-3. **Target creation**: Libraries and executables
-4. **Property configuration**: Compile options, definitions, includes
-5. **Linking**: Establish target dependencies
-6. **Testing setup**: Test discovery and execution
-7. **Installation**: Package for distribution
+1. **Project setup**: Version (0.0.2), C++17 standard, global settings
+2. **Platform detection**: Windows, macOS (Intel/Apple Silicon), Linux configuration
+3. **vcpkg integration**: Automatic toolchain detection and triplet selection
+4. **Dependency resolution**: Find or download required libraries via vcpkg
+5. **Target creation**: Libraries and executables with proper linking
+6. **Compiler optimization**: IPO/LTO for Release, debug symbols for Debug
+7. **Testing setup**: Google Test integration with CTest
+8. **Installation**: Package for distribution with proper export targets
 
 ## Coding Standards
 
 ### C++ Standards
 
-- **Language version**: C++17 minimum, C++20 preferred for new code
+- **Language version**: C++17 (enforced via CMake)
 - **Standard library**: Prefer standard library over third-party when possible
 - **Modern features**: Use RAII, smart pointers, range-based loops, auto
+- **Extensions**: Disabled (CMAKE_CXX_EXTENSIONS OFF)
+
+### Code Formatting (.clang-format)
+
+The project uses clang-format with Google style base and customizations:
+
+```bash
+# Format single file
+clang-format -i src/file.cpp
+
+# Format all source files
+find . -name "*.cpp" -o -name "*.hpp" -o -name "*.h" | xargs clang-format -i
+```
+
+**Key formatting rules:**
+- **Line length**: 100 characters
+- **Indentation**: 4 spaces (no tabs)
+- **Brace style**: Attach (Google style)
+- **Pointer alignment**: Left (`int* ptr`)
+- **Access modifiers**: -2 indent offset
+- **Include sorting**: Case sensitive with preserved blocks
 
 ### Naming Conventions
 
@@ -380,7 +427,19 @@ void doSomething(int parameter_name);
 
 ### Adding vcpkg Dependencies
 
-1. **Update vcpkg.JSON**:
+The project uses vcpkg manifest mode with `vcpkg.json` for dependency management.
+
+**Current dependencies:**
+- `gtest`: Testing framework
+- `fmt`: String formatting library
+- `nlohmann-json`: JSON parsing
+- `cpprestsdk`: REST API client (non-UWP platforms)
+
+**Optional features:**
+- `networking`: Adds curl and openssl
+- `database`: Adds sqlite3 and postgresql
+
+1. **Update vcpkg.json**:
 
    ```json
    {
@@ -397,6 +456,16 @@ void doSomething(int parameter_name);
    find_package(NewDependency CONFIG REQUIRED)
    target_link_libraries(your_target PRIVATE NewDependency::NewDependency)
    ```
+
+3. **Enable optional features**:
+
+   ```bash
+   cmake --preset vcpkg-features
+   # Or set VCPKG_MANIFEST_FEATURES="networking;database"
+   ```
+
+**Version overrides:**
+The project pins `fmt` to version 10.1.1 for stability.
 
 ### Adding System Dependencies
 
@@ -451,12 +520,50 @@ void doSomething(int parameter_name);
 
 ## Testing Guidelines
 
+### Test Framework
+
+The project uses **Google Test** with automatic discovery via CMake:
+
+- **Framework**: Google Test (gtest) + Google Mock (gmock)
+- **Discovery**: `gtest_discover_tests()` for automatic test registration
+- **Execution**: CTest integration with parallel execution
+- **Configuration**: 4 parallel jobs, 5-minute timeout
+
+### Running Tests
+
+```bash
+# Build and run all tests
+cmake --build build --target test
+
+# Run tests with CTest
+cd build && ctest
+
+# Run tests with verbose output
+cd build && ctest --verbose
+
+# Run specific test
+cd build && ctest -R "test_name"
+
+# Run tests in parallel
+cd build && ctest -j4
+```
+
 ### Test Categories
 
 1. **Unit Tests**: Test individual classes/functions in isolation
 2. **Integration Tests**: Test component interactions
 3. **Performance Tests**: Benchmark critical functionality
 4. **System Tests**: End-to-end application testing
+
+### Test Organization
+
+```
+tests/
+├── unit/           # Unit tests for individual components
+├── integration/    # Integration tests
+├── performance/    # Performance benchmarks
+└── CMakeLists.txt  # Test configuration
+```
 
 ### Test Structure
 
@@ -619,25 +726,80 @@ configure_cpp_target(mylib)
 ### Development Workflow
 
 1. **Fork the repository**
-2. **Create a feature branch**: `git checkout -b feature/new-feature`
-3. **Make changes** following coding standards
-4. **Add tests** for new functionality
-5. **Update documentation** as needed
-6. **Ensure all tests pass**: `cmake --build build --target test`
-7. **Submit a pull request**
+2. **Set up development environment**: `./scripts/setup-dev-env.sh`
+3. **Create a feature branch**: `git checkout -b feature/new-feature`
+4. **Make changes** following coding standards
+5. **Format code**: `clang-format -i modified_files.cpp`
+6. **Add tests** for new functionality
+7. **Build and test**: `cmake --preset vcpkg && cmake --build build/vcpkg --target test`
+8. **Check code quality**: Ensure CI checks pass
+9. **Update documentation** as needed
+10. **Submit a pull request**
+
+### Development Environment Setup
+
+Use the provided setup script for your platform:
+
+```bash
+# Automated setup (macOS, Ubuntu, Fedora, Arch)
+./scripts/setup-dev-env.sh
+
+# Manual vcpkg setup
+export VCPKG_ROOT=/path/to/vcpkg
+cmake --preset vcpkg
+```
+
+### Continuous Integration
+
+The project uses GitHub Actions for automated quality checks:
+
+**Code Quality Workflow** (`.github/workflows/code-quality.yml`):
+- **C++ Linting**: clang-format and clang-tidy analysis
+- **CMake Formatting**: cmake-format validation
+- **Static Analysis**: cppcheck integration
+- **SARIF Upload**: Security analysis results
+- **Multi-platform**: Ubuntu 24.04 with LLVM 17
+
+**Quality Gates:**
+- Code formatting compliance
+- Static analysis warnings
+- Build success across configurations
+- Test execution and coverage
 
 ### Code Review Checklist
 
-- [ ] Code follows project coding standards
-- [ ] All new functionality has tests
+**Code Quality:**
+- [ ] Code follows project coding standards (.clang-format)
+- [ ] Static analysis warnings addressed (clang-tidy)
+- [ ] No compiler warnings introduced
+- [ ] Proper error handling and exception safety
+
+**Testing:**
+- [ ] All new functionality has unit tests
 - [ ] Tests pass on all supported platforms
-- [ ] Documentation is updated
+- [ ] Test coverage is adequate
+- [ ] Integration tests added for new features
+
+**Documentation:**
+- [ ] Public APIs documented with Doxygen comments
+- [ ] README.md updated if needed
+- [ ] DEVELOPER_GUIDE.md updated for new patterns
+- [ ] CHANGELOG.md updated
+
+**Build System:**
 - [ ] CMake configuration is correct
+- [ ] vcpkg.json updated for new dependencies
 - [ ] No unnecessary dependencies added
-- [ ] Performance impact considered
-- [ ] Error handling is appropriate
+- [ ] Build works with all CMake presets
+
+**Performance & Security:**
+- [ ] Performance impact considered and measured
+- [ ] Memory safety verified (RAII, smart pointers)
+- [ ] No security vulnerabilities introduced
 
 ### Commit Message Format
+
+The project follows the [Conventional Commits](https://www.conventionalcommits.org/) specification for commit messages:
 
 ```
 type(scope): brief description
@@ -650,15 +812,153 @@ Detailed explanation of the change, including:
 Closes #123
 ```
 
-Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
+**Conventional Commits Types:**
+- `feat`: A new feature for the user
+- `fix`: A bug fix for the user
+- `docs`: Documentation changes
+- `style`: Code style changes (formatting, missing semi colons, etc)
+- `refactor`: Code refactoring without changing functionality
+- `test`: Adding or updating tests
+- `chore`: Maintenance tasks, dependency updates, build changes
+- `perf`: Performance improvements
+- `ci`: Changes to CI/CD configuration
+- `build`: Changes to build system or external dependencies
+- `revert`: Reverting a previous commit
+
+**Breaking Changes:**
+For breaking changes, add `!` after the type/scope: `feat!: remove deprecated API`
+
+**Examples:**
+```
+feat(core): add data validation module
+fix(build): resolve vcpkg dependency conflict
+docs: update installation instructions
+test(utils): add unit tests for string utilities
+chore!: upgrade to C++20 standard
+```
 
 ### Release Process
 
-1. **Update version numbers** in CMakeLists.txt and vcpkg.JSON
-2. **Update CHANGELOG.md** with new features and fixes
-3. **Create release branch**: `git checkout -b release/v1.2.0`
-4. **Final testing** on all supported platforms
-5. **Merge to main** and tag release
-6. **Create GitHub release** with release notes
+The project uses an automated release workflow triggered by Git tags. The process follows semantic versioning and Conventional Commits for changelog generation.
+
+#### Automated Release Workflow
+
+The release process is fully automated via GitHub Actions (`.github/workflows/release.yml`):
+
+1. **Multi-platform builds**: Ubuntu 24.04, Windows 2022, macOS 14
+2. **Package generation**: TGZ, ZIP, DEB, RPM, DMG, NSIS installers
+3. **Automatic changelog**: Generated from commit history using Conventional Commits
+4. **GitHub release creation**: With generated release notes and downloadable packages
+
+#### Creating a Release
+
+**Step 1: Prepare the release**
+```bash
+# Update version in CMakeLists.txt
+sed -i 's/VERSION [0-9]\+\.[0-9]\+\.[0-9]\+/VERSION 1.2.3/' CMakeLists.txt
+
+# Update version in vcpkg.json
+sed -i 's/"version": "[0-9]\+\.[0-9]\+\.[0-9]\+"/"version": "1.2.3"/' vcpkg.json
+
+# Commit version updates
+git add CMakeLists.txt vcpkg.json
+git commit -m "chore: bump version to 1.2.3"
+```
+
+**Step 2: Create and push the release tag**
+```bash
+# Create annotated tag following semantic versioning
+git tag -a v1.2.3 -m "Release v1.2.3"
+
+# Push the tag to trigger release workflow
+git push origin v1.2.3
+```
+
+**Step 3: Monitor the release workflow**
+- GitHub Actions will automatically build packages for all platforms
+- Release will be created with generated changelog and downloadable assets
+- Check the Actions tab for build status and logs
+
+#### Release Workflow Features
+
+**Build Matrix:**
+- **Linux (Ubuntu 24.04)**: TGZ archive + DEB package
+- **Windows (2022)**: ZIP archive + NSIS installer
+- **macOS (14)**: TGZ archive + DMG disk image
+
+**Quality Assurance:**
+- Automated testing on all platforms
+- Build artifact verification
+- Package integrity checks
+- Graceful handling of build failures
+
+**Release Notes Generation:**
+- Automatic changelog from git history
+- Conventional Commits parsing
+- Installation instructions for each platform
+- Build status and package availability
+
+#### Version Management
+
+**Semantic Versioning:**
+- `MAJOR.MINOR.PATCH` (e.g., `1.2.3`)
+- Breaking changes: increment MAJOR
+- New features: increment MINOR
+- Bug fixes: increment PATCH
+
+**Pre-release versions:**
+```bash
+# Alpha release
+git tag -a v1.3.0-alpha.1 -m "Pre-release v1.3.0-alpha.1"
+
+# Beta release
+git tag -a v1.3.0-beta.1 -m "Pre-release v1.3.0-beta.1"
+
+# Release candidate
+git tag -a v1.3.0-rc.1 -m "Release candidate v1.3.0-rc.1"
+```
+
+#### Hotfix Process
+
+For critical bug fixes:
+
+```bash
+# Create hotfix branch from main
+git checkout -b hotfix/v1.2.4 main
+
+# Make necessary fixes
+git commit -m "fix(core): resolve critical security issue"
+
+# Update version and create tag
+git tag -a v1.2.4 -m "Hotfix v1.2.4"
+git push origin v1.2.4
+```
+
+#### Troubleshooting Releases
+
+**Build failures:**
+- Check GitHub Actions logs for specific platform failures
+- Build logs are automatically uploaded as artifacts
+- Releases are created even with partial build failures
+
+**Package verification:**
+```bash
+# Download and test packages locally
+wget https://github.com/user/cpp-template/releases/download/v1.2.3/cpp-template-1.2.3-linux-x64.tar.gz
+tar -xzf cpp-template-1.2.3-linux-x64.tar.gz
+./cpp-template-1.2.3-linux-x64/bin/cpp-template-app --version
+```
+
+**Manual release creation:**
+If automated workflow fails, create releases manually:
+```bash
+# Build locally
+cmake --preset default
+cmake --build build --config Release
+cpack -G "TGZ;ZIP" -C Release
+
+# Upload to GitHub release page
+gh release create v1.2.3 build/cpp-template-*.tar.gz build/cpp-template-*.zip
+```
 
 This developer guide should be updated as the project evolves and new patterns emerge. For questions or clarifications, please open an issue or start a discussion.

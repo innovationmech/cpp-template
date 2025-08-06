@@ -329,5 +329,6 @@ external/
 docs/generated/
 /install/
 
-# tools
+# ai
 .claude/
+.trae/
