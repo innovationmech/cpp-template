@@ -19,7 +19,7 @@ cmake_minimum_required(VERSION 3.20)
 # Conan) - IDE integration - Documentation generation - Installation and packaging
 project(
     cpp-template
-    VERSION 1.0.0
+    VERSION 0.0.2
     DESCRIPTION "Modern C++ Project Template demonstrating best practices"
     HOMEPAGE_URL "https://github.com/example/cpp-template"
     LANGUAGES CXX)
